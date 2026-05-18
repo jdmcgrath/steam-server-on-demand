@@ -1,7 +1,7 @@
 # [r/<game>] A £2/month on-demand <Game> server you control from Discord
 
 > **Adapting per subreddit:** swap "Enshrouded" in the title for whichever
-> game's subreddit you're posting in (Valheim, Palworld, V Rising — all
+> game's subreddit you're posting in (Valheim, Palworld, V Rising all
 > work out of the box). The body below is already game-agnostic.
 
 Made this for my friend group after I got fed up paying for a server we
@@ -11,7 +11,7 @@ use ~5 hours a week. It's free and open source.
 
 A Discord bot that spins up a fresh dedicated game server in 75–90
 seconds when someone types `/start`, and auto-shuts down 60 minutes
-after the last person leaves. Saves persist between sessions — you
+after the last person leaves. Saves persist between sessions, so you
 reconnect to the same world every time, with all bases and characters
 intact.
 
@@ -19,7 +19,7 @@ intact.
 
 For one game at typical use (5–10 hrs/week), expect ~£1/month total.
 For four games running together (like me), ~£2/month. The whole bot
-runs on Cloudflare's **Free** Workers tier — costs nothing.
+runs on Cloudflare's **Free** Workers tier, so that part costs nothing.
 
 The breakdown:
 
@@ -27,7 +27,7 @@ The breakdown:
   per game at 5–10 hrs/week of play)
 - **Per-game block volume (10 GB) for saves**: €0.40/month, always
   allocated
-- **Cloudflare Worker for the Discord bot**: free tier is enough — the
+- **Cloudflare Worker for the Discord bot**: free tier is enough. The
   start flow's CPU time is well under Free's limits since most of it
   is sleeping or waiting on network calls.
 
@@ -68,5 +68,5 @@ There's a longer writeup of the journey + the technical discoveries
 if you're into the infra side.
 
 If you bring it up and it works for your group, a GitHub star is the
-nicest way to say so — helps other groups find it. Issues and PRs
+nicest way to say so. It helps other groups find it. Issues and PRs
 welcome too, especially if you want to add a game I haven't covered.

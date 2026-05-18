@@ -2,7 +2,7 @@
 
 A few of us started a new
 [Enshrouded](https://store.steampowered.com/app/1203620/Enshrouded/) run
-the other weekend. Played the whole Saturday — built a base, hit a few
+the other weekend. Played the whole Saturday: built a base, hit a few
 skill points, the usual. Sunday came around, they wanted to keep going,
 and I was busy with something else.
 
@@ -12,33 +12,33 @@ host on my desktop.
 
 So we needed a real server. My desktop isn't comfortable hosting while I
 also play, and the dedicated Enshrouded hosts I looked at wanted £14 a
-month minimum — for a server we'd actually use maybe five hours a week.
+month minimum, for a server we'd actually use maybe five hours a week.
 Roughly £170 a year for something idle 95% of the time.
 
-I work with AWS Lambda every day. Pay-when-you-use is the default mental
-model in my world. So my first thought was: surely someone's built
-this for game servers. Spin up on demand, shut down when idle, bill by
-the hour. Serverless gaming.
+I work with AWS Lambda every day. Pay-when-you-use is how I think
+about hosting. So my first thought was: surely someone's built this for
+game servers. Spin up on demand, shut down when idle, bill by the hour.
+Serverless gaming.
 
 Turns out, sort of. [Aternos](https://aternos.org) has had this nailed
-for Minecraft for over a decade — free, ad-supported, brilliant piece of
-internet software. But for Enshrouded? Valheim? Palworld? The games we
-actually play? Nothing. The market for any of those is exclusively
+for Minecraft for over a decade. Free, ad-supported, a brilliant piece
+of internet software. But for Enshrouded? Valheim? Palworld? The games
+we actually play? Nothing. The market for any of those is exclusively
 flat-rate monthly.
 
 So I built it.
 
-This isn't a business pitch — there's no SaaS to sign up for, no paid
-tier, no email collection. It's an open-source repo (MIT) for any
-group of friends who want to play these games together a few hours a
-week without paying flat-rate hosting prices.
+This isn't a business pitch. There's no SaaS to sign up for, no paid
+tier, no email collection. It's an open-source repo (MIT) for any group
+of friends who want to play these games together a few hours a week
+without paying flat-rate hosting prices.
 
 What started as a weekend hack for one game turned into something more
 general. The same architecture now ships Discord-controlled,
 pay-as-you-play hosting for **Enshrouded, Valheim, Palworld, and V
 Rising** out of the same repo. My actual monthly bill across all four
-is **about £2** — Hetzner only, since the Discord bot fits comfortably
-inside Cloudflare's Workers Free tier.
+is **about £2**, Hetzner only. The Discord bot fits comfortably inside
+Cloudflare's Workers Free tier.
 
 The result: a dedicated game server that **doesn't exist** unless
 someone asks for it. Someone types `/enshrouded start` (or `/valheim`,
@@ -79,7 +79,7 @@ network at no per-request cost worth caring about.
 | Hetzner CPX 32 VM | €0.022/hour, billed only while running |
 | Per-game block volume (10 GB) | €0.40/month, always allocated |
 | Per-game snapshot (~5–7 GB) | ~€0.08/month |
-| Cloudflare Worker | £0 — fits in the Free plan |
+| Cloudflare Worker | £0, fits in the Free plan |
 
 For our group running all four games at ~5–10 hours each per week,
 that comes to **about £2/month**. For someone running just one of
@@ -95,7 +95,7 @@ lifting: snapshot has everything, new VM boots from snapshot, container
 starts instantly. Instead, the first boot took two and a half minutes and
 downloaded 8 GB of Steam files. Every. Single. Time.
 
-That kicked off a fun investigation.
+So I started digging.
 
 ### Discovery 1: the upstream image defeats its own snapshot caching
 
@@ -108,14 +108,14 @@ Docker image. Its entrypoint, somewhere near the top, has:
 rm -f "$ENSHROUDED_PATH"/steamapps/appmanifest_*.acf >/dev/null 2>&1 || true
 ```
 
-Steamcmd uses that appmanifest to know what's installed at what version. If
-the manifest is missing, steamcmd assumes nothing is installed — and
+Steamcmd uses that appmanifest to know what's installed at what version.
+If the manifest is missing, steamcmd assumes nothing is installed and
 re-downloads the whole 8 GB.
 
 The author put this there to recover from corrupted state. For most users
 (start a container, leave it running) it's a sensible safety net. For my
 use case (boot from snapshot, run, shut down, repeat) it's exactly the
-wrong thing — the snapshot has a perfectly good appmanifest and I want
+wrong thing. The snapshot has a perfectly good appmanifest and I want
 steamcmd to trust it.
 
 I bind-mount a patched copy of the entrypoint over the upstream one. One
@@ -124,7 +124,7 @@ line removed.
 ### Discovery 2: `validate` is expensive
 
 Even with the manifest preserved, steamcmd was spending 60–90 seconds on
-every boot doing a "verify install" pass — hashing every file in the 8 GB
+every boot doing a "verify install" pass: hashing every file in the 8 GB
 install to check integrity.
 
 That's because the original entrypoint calls:
@@ -156,21 +156,21 @@ left=$(docker logs enshrouded   | grep -c "PlayerLeft")
 
 There's an honest comment right above: `# Adjust grep pattern once
 you've seen real Enshrouded log lines`. The author wired the structure
-but never finished the strings — and Enshrouded doesn't actually log
+but never finished the strings. Enshrouded doesn't actually log
 `PlayerJoined` or `PlayerLeft`. The watchdog as shipped always sees
 zero players and shuts down after its idle window, even mid-session.
 (I found this the hard way when it killed my SSH session.)
 
 The right way to count players on a Steam dedicated server is the
-**A2S_INFO** UDP query — the same protocol Steam's server browser
-uses to show "3/10 players" in the list. ~20 lines of Python in a
-bash loop, runs every minute, no log scraping at all.
+**A2S_INFO** UDP query, the same protocol Steam's server browser uses
+to show "3/10 players" in the list. ~20 lines of Python in a bash
+loop, runs every minute, no log scraping at all.
 
 ### Discovery 4: Hetzner snapshots preserve container IDs
 
 This one cost me an hour. After a `delete server + create from snapshot`,
 I'd look at `docker logs enshrouded` and see what looked like two full
-container runs back-to-back — first an 8 GB download, then game start,
+container runs back-to-back: first an 8 GB download, then game start,
 then a mysterious shutdown after 41 seconds, then a re-verify, then
 another game start.
 
@@ -183,13 +183,13 @@ The actual answer was simpler and much funnier. Hetzner snapshots are
 full disk images. The container's writable layer and its log file are on
 the snapshotted disk. When the snapshot is restored on a new VM and
 `docker compose up -d` runs, Docker sees an existing container that
-matches the compose config — and just *starts* it rather than
-recreating. The container ID stays the same across snapshot/restore
-cycles, and so does its log file.
+matches the compose config and just *starts* it rather than recreating.
+The container ID stays the same across snapshot/restore cycles, and so
+does its log file.
 
 The "mysterious shutdown" was my own `docker compose stop` from when I
 was preparing the snapshot, replayed in the logs of every subsequent
-boot. There was never a bug — just a stale log line I kept rediscovering.
+boot. There was never a bug, just a stale log line I kept rediscovering.
 
 Moral: when investigating `docker logs` on a snapshot-restored container,
 filter by time aggressively. Or look at `docker inspect --format
@@ -198,20 +198,20 @@ filter by time aggressively. Or look at `docker inspect --format
 ## What's not obvious — generalising to four games
 
 With Enshrouded working, I tried adding Valheim, then Palworld, then V
-Rising. The repo's architecture turned out to be ~85% game-agnostic — but
+Rising. The repo's architecture turned out to be ~85% game-agnostic, but
 the 15% that isn't taught me as much as the original investigation did.
 
 ### Discovery 5: the "listed publicly = answerable to queries" trap
 
-I baked Valheim. The world generated, I could connect, my character spawned.
-But the watchdog never reset the idle timer — A2S queries on Valheim's
-query port were timing out.
+I baked Valheim. The world generated, I could connect, my character
+spawned. But the watchdog never reset the idle timer. A2S queries on
+Valheim's query port were timing out.
 
 Buried in the lloesche image's env var: `SERVER_PUBLIC=true`. With
 `SERVER_PUBLIC=false` (which felt like the safer default for a small
-private server), Valheim's server binary suppresses A2S responses entirely.
-Doesn't matter that the password gates actual joins — Valheim refuses to
-answer Steam queries when not listed publicly.
+private server), Valheim's server binary suppresses A2S responses
+entirely. Doesn't matter that the password gates actual joins; Valheim
+refuses to answer Steam queries when not listed publicly.
 
 A week later, baking V Rising, exactly the same thing happened with a
 different env var: `HOST_SETTINGS_ListOnSteam=true`. Different game,
@@ -226,12 +226,12 @@ its equivalent), with the password as the actual access control.
 ### Discovery 6: Palworld doesn't implement A2S at all
 
 Then I tried Palworld. The game came up, I connected fine, but A2S timed
-out *everywhere* — on the standard Steam query port (27015), on the game
+out *everywhere*: on the standard Steam query port (27015), on the game
 port (8211), even from inside the container hitting localhost. The socket
-was bound, but `/proc/net/udp` showed the receive buffer filling up: queries
-were arriving, the server just wasn't reading them.
+was bound, but `/proc/net/udp` showed the receive buffer filling up:
+queries were arriving, the server just wasn't reading them.
 
-[BattleMetrics — the largest game-server monitoring service — explicitly
+[BattleMetrics (the largest game-server monitoring service) explicitly
 states](https://www.battlemetrics.com/servers/palworld/38791379)
 *"Palworld does not support player lists"*. Pocketpair (Palworld's
 developer) chose not to implement A2S responses. Instead, they ship a
@@ -253,25 +253,25 @@ docker exec palworld wget -qO- \
   | jq '.players | length'
 ```
 
-This unlocks future games that don't speak A2S — Factorio's UDP protocol,
-Minecraft's GameSpy query, Satisfactory's Unreal-native protocol — all
-addressable through a 20-line per-game probe script with no changes to the
-watchdog itself.
+This unlocks future games that don't speak A2S: Factorio's UDP protocol,
+Minecraft's GameSpy query, Satisfactory's Unreal-native protocol, all
+addressable through a 20-line per-game probe script with no changes to
+the watchdog itself.
 
 ## Shipping four games
 
 The architecture, after the multi-game push, splits into:
 
-- `games/<name>/` — per-game compose file, `.env.example`, README, and
-  optionally an `entrypoint.sh` (only Enshrouded needs one) or `probe.sh`
-  (only Palworld so far).
-- `worker/` — `GAME_NAME` and `GAME_PORT` come from env vars instead of
-  hardcoded constants. Same Worker source can serve any game; deploying
-  multiple is one wrangler config per game.
-- `server/` — generic `game-watchdog` that dispatches to per-game probes
-  with the A2S probe as the default fallback.
-- `scripts/bake-snapshot.sh GAME=valheim …` — dispatches to the right game
-  folder and writes the right runtime config.
+- `games/<name>/` for the per-game compose file, `.env.example`, README,
+  and optionally an `entrypoint.sh` (only Enshrouded needs one) or
+  `probe.sh` (only Palworld so far).
+- `worker/` where `GAME_NAME` and `GAME_PORT` come from env vars instead
+  of hardcoded constants. Same Worker source can serve any game;
+  deploying multiple is one wrangler config per game.
+- `server/` for the generic `game-watchdog` that dispatches to per-game
+  probes with the A2S probe as the default fallback.
+- `scripts/bake-snapshot.sh GAME=valheim …`, which dispatches to the
+  right game folder and writes the right runtime config.
 
 Adding a new A2S-compatible Steam game (Project Zomboid, 7 Days to Die,
 Source-engine games, Don't Starve Together, Core Keeper) is now a single
@@ -286,7 +286,7 @@ Open issues on the repo where I haven't done the work and a PR would
 land happily:
 
 - **More A2S-compatible games.** Project Zomboid, 7 Days to Die,
-  Don't Starve Together, Core Keeper, Source-engine titles — usually
+  Don't Starve Together, Core Keeper, Source-engine titles. Usually
   one new folder under `games/` with a compose file and an
   `.env.example`. 1–2 hours including a live-fire test.
 
@@ -297,7 +297,7 @@ land happily:
 - **Push the "game ready" signal from the VM, not poll for it.**
   Currently the Worker polls Hetzner status then sleeps a fixed 35
   seconds. Cleaner would be the VM curling back when the game's
-  actually serving — needs the Discord interaction token plumbed
+  actually serving. Needs the Discord interaction token plumbed
   through Hetzner's user-data field, with the Worker keeping a
   mapping in KV.
 
@@ -312,8 +312,8 @@ land happily:
 
 ## Why I bothered to write this up
 
-The boring infrastructure pieces — Hetzner Cloud, Cloudflare Workers,
-Discord interactions, the Steam A2S protocol, game REST APIs, Docker —
+The boring infrastructure pieces (Hetzner Cloud, Cloudflare Workers,
+Discord interactions, the Steam A2S protocol, game REST APIs, Docker)
 are individually well-trodden, but the combination isn't. The fun was
 all in the gaps between them: the snapshot caching trick, the watchdog
 placeholder bug, the phantom container restart, the listed-publicly
@@ -332,7 +332,7 @@ Code's MIT-licensed, with a setup guide that'll get you to a working
 <https://github.com/jdmcgrath/steam-server-on-demand>
 
 If you bring it up for a game I haven't covered, a PR with a new
-`games/<name>/` folder is the easiest way to contribute — most of them
+`games/<name>/` folder is the easiest way to contribute. Most of them
 are two files. If you find a bug or have a question, open an issue. If
 this saved you the hour I burned on the phantom container restart, a
 GitHub star helps me know it landed.

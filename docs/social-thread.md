@@ -41,12 +41,12 @@ Die, Source-engine games) is one new folder under games/ with two
 config files.
 
 **6/**
-Cost: $5/mo Cloudflare Workers Paid (flat, covers any number of games)
-+ ~£1.60/mo Hetzner fixed for all four games' infra + €0.022/hr only
-when someone's actually playing.
+Cost: £0 Cloudflare (bot fits in the Free tier), £0.40/mo Hetzner per
+game for the saves volume, plus €0.022/hr for VM time only while
+someone's actually playing.
 
-Realistic total ~£8/mo for all four. Compared to ~£14/mo *per game*
-flat from typical hosts.
+~£2/mo total for all four games. Typical flat-rate hosts: ~£14/mo
+*per game*.
 
 **7/**
 Open source, MIT. Setup guide is ~45 min/game:
