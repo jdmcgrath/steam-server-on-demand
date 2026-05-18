@@ -122,8 +122,18 @@ hcloud volume   list -o columns=id,name
 4. **OAuth2 → URL Generator** → scopes `bot` + `applications.commands` →
    generate the invite URL → add the bot to your Discord server.
 
-Register the slash command (replace `APP_ID`, `BOT_TOKEN`, and `$GAME`
-if your shell didn't already substitute):
+Register the slash command:
+
+```bash
+APP_ID=<your-application-id> BOT_TOKEN=<your-bot-token> \
+  bash scripts/register-discord-commands.sh $GAME
+```
+
+The script handles the curl + JSON for you, prints clear errors if the
+credentials are wrong, and is idempotent (re-running for the same game
+overwrites the existing command rather than duplicating it).
+
+If you'd rather do it manually:
 
 ```bash
 curl -X POST "https://discord.com/api/v10/applications/APP_ID/commands" \

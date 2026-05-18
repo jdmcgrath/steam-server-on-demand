@@ -21,12 +21,39 @@
 #
 set -euo pipefail
 
+die() {
+	echo >&2
+	echo "ERROR: $*" >&2
+	exit 1
+}
+
 require() {
-	if [ -z "${!1:-}" ]; then echo "ERROR: \$$1 is required" >&2; exit 1; fi
+	if [ -z "${!1:-}" ]; then
+		die "environment variable \$$1 is required.
+
+  Set it before running this script, e.g.:
+    export $1=<value>
+  Then re-run bake-snapshot.sh.
+
+  See README + games/<game>/.env.example for what each game needs."
+	fi
 }
 require GAME
 require WORKER_URL
 require WATCHDOG_SECRET
+
+# Friendlier failure on any unhandled error.
+on_error() {
+	local rc=$?
+	local line=$1
+	echo >&2
+	echo "bake-snapshot.sh failed at line $line (exit $rc)." >&2
+	echo "  Most recent step shown above. If the failure was during" >&2
+	echo "  container start, check 'docker logs' or" >&2
+	echo "  'journalctl -u game-server'." >&2
+	exit "$rc"
+}
+trap 'on_error $LINENO' ERR
 
 # Find the saves volume. Hetzner exposes attached volumes via a predictable
 # by-id symlink (scsi-0HC_Volume_<id>), which is robust to kernel
@@ -56,8 +83,14 @@ fi
 
 echo "==> Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg jq python3
+apt-get update -qq \
+	|| die "apt-get update failed.
+
+  This is usually transient — Debian's mirrors occasionally hiccup.
+  Try again in a minute. If it keeps failing, check that the VM has
+  outbound internet (curl https://deb.debian.org/ should work)."
+apt-get install -y -qq ca-certificates curl gnupg jq python3 \
+	|| die "couldn't install base packages. See apt output above for the failed package(s)."
 install -m 0755 -d /etc/apt/keyrings
 if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
 	curl -fsSL https://download.docker.com/linux/debian/gpg \
@@ -71,15 +104,30 @@ apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plug
 
 echo "==> Mounting persistent saves volume"
 if [ ! -b "$VOLUME_DEV" ]; then
-	echo "ERROR: $VOLUME_DEV not found — is the volume attached?" >&2
-	exit 1
+	die "$VOLUME_DEV not found.
+
+  Is the saves volume attached to this VM?
+    Check:  hcloud server describe <this-vm> | grep -i volume
+    Attach: hcloud server attach-volume <vm> --volume <volume-name>
+
+  Or set VOLUME_DEV=<path> if the volume is at an unexpected device."
 fi
 if ! blkid "$VOLUME_DEV" >/dev/null 2>&1; then
 	echo "  -> formatting $VOLUME_DEV as ext4 (first-time use)"
-	mkfs.ext4 -F "$VOLUME_DEV"
+	mkfs.ext4 -F "$VOLUME_DEV" \
+		|| die "mkfs.ext4 failed on $VOLUME_DEV. Is the device already mounted somewhere else? Run 'mount | grep $VOLUME_DEV' to check."
 fi
 mkdir -p /mnt/saves
-mountpoint -q /mnt/saves || mount "$VOLUME_DEV" /mnt/saves
+if ! mountpoint -q /mnt/saves; then
+	mount "$VOLUME_DEV" /mnt/saves \
+		|| die "mount $VOLUME_DEV /mnt/saves failed.
+
+  This usually means $VOLUME_DEV is already mounted at a different
+  path (Hetzner cloud-init sometimes auto-mounts volumes at
+  /mnt/HC_Volume_NNN). Run:
+    mount | grep $VOLUME_DEV
+  and either unmount it first, or set VOLUME_DEV to the right path."
+fi
 VOL_UUID=$(blkid -s UUID -o value "$VOLUME_DEV")
 grep -q "$VOL_UUID" /etc/fstab \
 	|| echo "UUID=$VOL_UUID /mnt/saves ext4 defaults,nofail 0 2" >> /etc/fstab
