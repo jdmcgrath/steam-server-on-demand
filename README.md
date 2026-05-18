@@ -161,12 +161,27 @@ walkthrough.
 Other open issues live on the [issues
 page](https://github.com/jdmcgrath/steam-server-on-demand/issues).
 
-## Credits
+## Built on top of
 
-- Enshrouded image: [`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server)
-- Valheim image: [`lloesche/valheim-server`](https://github.com/lloesche/valheim-server-docker)
-- V Rising image: [`trueosiris/vrising`](https://github.com/TrueOsiris/docker-vrising)
-- Palworld image: [`thijsvanloef/palworld-server-docker`](https://github.com/thijsvanloef/palworld-server-docker)
+This project is thin orchestration around several substantial
+open-source Docker images. The people who maintain them did the
+actually-hard work of packaging dedicated game servers in a way that
+runs reliably under Wine, Proton, and steamcmd:
+
+- [`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server)
+  — Enshrouded
+- [`lloesche/valheim-server`](https://github.com/lloesche/valheim-server-docker)
+  — Valheim
+- [`trueosiris/vrising`](https://github.com/TrueOsiris/docker-vrising)
+  — V Rising
+- [`thijsvanloef/palworld-server-docker`](https://github.com/thijsvanloef/palworld-server-docker)
+  — Palworld
+
+I don't take donations for this repo — it's just a weekend hack I
+open-sourced because I couldn't find one online. If you'd like to
+support open-source work this project depends on, those maintainers'
+repos and GitHub profiles are where the actual value flows. Several of
+them have Sponsor buttons.
 
 ## License
 

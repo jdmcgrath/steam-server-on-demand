@@ -114,6 +114,14 @@ The bake script lives in `scripts/bake-snapshot.sh` and is plain
 bash. Run `bash -n scripts/bake-snapshot.sh` to syntax-check; running
 it for real requires a Hetzner VM with a volume attached.
 
+## Sponsoring
+
+This project doesn't take donations. If you'd like to support the
+open-source work it depends on, the upstream Docker image maintainers
+(see [README → Built on top of](./README.md#built-on-top-of)) have
+done the actually-hard work and several have Sponsor buttons. Their
+repos and profiles are where the value flows.
+
 ## Code of Conduct
 
 This project follows the
