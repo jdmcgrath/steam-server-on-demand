@@ -28,6 +28,11 @@ flat-rate monthly.
 
 So I built it.
 
+This isn't a business pitch — there's no SaaS to sign up for, no paid
+tier, no email collection. It's an open-source repo (MIT) for any
+group of friends who want to play these games together a few hours a
+week without paying flat-rate hosting prices.
+
 What started as a weekend hack for one game turned into something more
 general. The same architecture now ships Discord-controlled,
 pay-as-you-play hosting for **Enshrouded, Valheim, Palworld, and V

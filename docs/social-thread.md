@@ -8,11 +8,11 @@ canonical post URL once published.
 
 **1/**
 Last Sunday my friends wanted to play Enshrouded. World was on my
-desktop, I was busy, and dedicated hosts cost £14+/mo per game for
+desktop, I was busy. Dedicated hosts wanted £14+/mo per game for
 something we use 5 hrs a week.
 
-So I built pay-as-you-play game hosting. ~£2/mo for four games.
-Cloudflare Free + a few hours of Hetzner per week.
+So I built pay-as-you-play and open-sourced it. ~£2/mo for four
+games. Cloudflare Free.
 
 **2/**
 Type `/enshrouded start` in Discord → fresh VM from a snapshot, game
