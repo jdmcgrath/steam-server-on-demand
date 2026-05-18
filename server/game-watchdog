@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 #
-# Idle watchdog. Queries the game's Steam A2S protocol every minute; while
-# any player is connected, the idle timer is held at zero. After IDLE_MINUTES
-# of zero players, performs a graceful shutdown and notifies the Worker
-# (which deletes the Hetzner VM).
+# Idle watchdog. Polls a player-count probe every minute; while any player is
+# connected, the idle timer is held at zero. After IDLE_MINUTES of zero
+# players, performs a graceful shutdown and notifies the Worker (which
+# deletes the Hetzner VM).
+#
+# Probe dispatch:
+#   1. If /etc/game-server/probe.sh exists and is executable, run it.
+#      It must print the player count to stdout and exit 0 on success.
+#      Games that don't speak A2S (like Palworld → REST API) provide their own.
+#   2. Otherwise, fall back to the built-in Steam A2S probe against QUERY_PORT.
+#      Works for Enshrouded, Valheim, V Rising, and most Source-engine games.
 #
 # Required runtime files on the host:
 #   /etc/game-server/worker-url   contains the Worker /api/cleanup URL
@@ -16,6 +23,7 @@ SECRET="$(cat /etc/game-server/secret)"
 IDLE_MINUTES="${IDLE_MINUTES:-60}"
 QUERY_PORT="${QUERY_PORT:-15637}"
 POLL_INTERVAL="${POLL_INTERVAL:-60}"
+PROBE_SCRIPT="${PROBE_SCRIPT:-/etc/game-server/probe.sh}"
 
 a2s_player_count() {
   python3 - "$QUERY_PORT" <<'PYEOF'
@@ -45,13 +53,27 @@ except Exception:
 PYEOF
 }
 
+get_player_count() {
+  if [ -x "$PROBE_SCRIPT" ]; then
+    "$PROBE_SCRIPT"
+  else
+    a2s_player_count
+  fi
+}
+
+if [ -x "$PROBE_SCRIPT" ]; then
+  probe_kind="custom probe ($PROBE_SCRIPT)"
+else
+  probe_kind="A2S query on port $QUERY_PORT"
+fi
+
 idle_since=$(date +%s)
-logger "game-watchdog: starting (idle limit ${IDLE_MINUTES}m, poll ${POLL_INTERVAL}s, query port ${QUERY_PORT})"
+logger "game-watchdog: starting (idle limit ${IDLE_MINUTES}m, poll ${POLL_INTERVAL}s, $probe_kind)"
 
 while true; do
   sleep "$POLL_INTERVAL"
 
-  if count=$(a2s_player_count 2>/dev/null); then
+  if count=$(get_player_count 2>/dev/null); then
     if [ "$count" -gt 0 ]; then
       idle_since=$(date +%s)
       logger "game-watchdog: ${count} player(s) online, idle timer reset"

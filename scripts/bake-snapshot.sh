@@ -85,6 +85,9 @@ install -m 0644 "$GAME_DIR/docker-compose.yml.example"           /etc/game-serve
 if [ -f "$GAME_DIR/entrypoint.sh" ]; then
 	install -m 0755 "$GAME_DIR/entrypoint.sh"                    /etc/game-server/entrypoint.sh
 fi
+if [ -f "$GAME_DIR/probe.sh" ]; then
+	install -m 0755 "$GAME_DIR/probe.sh"                         /etc/game-server/probe.sh
+fi
 install -m 0755 "$REPO_DIR/server/game-watchdog"                 /usr/local/bin/game-watchdog
 install -m 0644 "$REPO_DIR/server/systemd/game-server.service"   /etc/systemd/system/game-server.service
 install -m 0644 "$REPO_DIR/server/systemd/game-watchdog.service" /etc/systemd/system/game-watchdog.service

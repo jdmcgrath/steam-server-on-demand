@@ -5,17 +5,21 @@ services:
     restart: unless-stopped
     stop_grace_period: 90s
     ports:
-      - "8211:8211/udp"        # game + A2S query
-      # Uncomment if you want RCON (admin commands over network):
-      # - "25575:25575/tcp"
+      - "8211:8211/udp"        # game (player connections)
+      # Steam query port (27015) deliberately not exposed:
+      # Palworld's dedicated server doesn't reliably respond to A2S queries,
+      # so the watchdog uses the REST API for player counting instead
+      # (see games/palworld/probe.sh). The REST API on 8212 stays internal —
+      # the upstream image's README explicitly says DO NOT publish 8212.
     environment:
       - SERVER_NAME=${SERVER_NAME:-Palworld On-Demand}
       - SERVER_DESCRIPTION=${SERVER_DESCRIPTION:-On-demand Palworld server}
       - SERVER_PASSWORD=${SERVER_PASSWORD}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - MAX_PLAYERS=${MAX_PLAYERS:-32}
-      - PUBLIC_PORT=8211
-      - COMMUNITY_SERVER=${COMMUNITY_SERVER:-false}
+      - COMMUNITY=${COMMUNITY:-false}        # true = list in Steam community browser
+      - REST_API_ENABLED=true                # required for the watchdog's probe.sh
+      - REST_API_PORT=8212
       - PUID=1000
       - PGID=1000
     volumes:
