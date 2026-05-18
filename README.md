@@ -70,22 +70,26 @@ Compared to flat-rate hosting providers at £10–20/month regardless of use.
   - `enshrouded-watchdog` — bash + python A2S idle watchdog
   - `systemd/` — service units for the game server and watchdog
 
+## Setup
+
+See [**SETUP.md**](./SETUP.md) for the end-to-end walkthrough — Hetzner
+project bootstrap, Discord application, baking the snapshot, deploying
+the Worker. Plan ~45 minutes, most of which is the one-off Steam download
+during the bake step.
+
+You'll need:
+
+- A Hetzner Cloud account (per-hour VM billing)
+- A Cloudflare Workers Paid account (~£5/mo — needed for ~75 s of
+  background work during `start`)
+- A Discord application with a bot user
+
 ## Status
 
-Early open-source release. The code is here and is what's running in
-production for the author. A step-by-step setup guide is not yet written —
-in the meantime, the [architecture blog post](#) walks through the design.
-
-If you want to bring this up yourself before the guide exists, you'll need:
-
-- A Hetzner Cloud account with: a project, an SSH key uploaded, a block
-  volume created, a firewall configured (UDP 15637 in, SSH in from your IP)
-- A Cloudflare Workers Paid account (the start flow uses `ctx.waitUntil` for
-  ~75 s of background polling)
-- A Discord application with a bot user and a `/enshrouded` slash command
-  registered with `start`, `stop`, `status` subcommands
-
-Setup-guide PRs welcome.
+Early open-source release. The code is what's running in production for
+the author. Issues and PRs welcome — especially around generalising to
+other Steam games with A2S support, and a Terraform alternative to the
+manual Hetzner bootstrap in SETUP.md.
 
 ## Credits
 
