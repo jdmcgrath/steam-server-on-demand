@@ -50,6 +50,43 @@ async function patchInteractionMessage(appId: string, token: string, content: st
 	});
 }
 
+/**
+ * Resolve which Hetzner snapshot to boot from.
+ *
+ * If HETZNER_SNAPSHOT_ID is set to a numeric ID, use it verbatim (back-compat
+ * with deployments that pinned to a specific snapshot).
+ *
+ * Otherwise — including when set to "auto" or left empty — list the project's
+ * snapshots and pick the most recent one whose description starts with
+ * `<GAME_NAME>-` (matching the convention from SETUP.md: `enshrouded-v1`,
+ * `valheim-v1`, etc.).
+ *
+ * The auto-discovery path means a new snapshot bake doesn't require redeploying
+ * the Worker — the next /start just picks up the latest one.
+ */
+async function resolveSnapshotId(env: Env): Promise<number> {
+	const explicit = env.HETZNER_SNAPSHOT_ID?.trim();
+	if (explicit && explicit !== 'auto' && /^\d+$/.test(explicit)) {
+		return parseInt(explicit, 10);
+	}
+
+	const data = await hetzner(env, '/images?type=snapshot&per_page=50');
+	const prefix = `${env.GAME_NAME}-`;
+	const matching = (data?.images ?? [])
+		.filter((img: any) => typeof img.description === 'string' && img.description.startsWith(prefix))
+		.sort((a: any, b: any) => Date.parse(b.created) - Date.parse(a.created));
+
+	if (matching.length === 0) {
+		throw new Error(
+			`No snapshot found whose description starts with '${prefix}'. ` +
+			`Bake a snapshot for ${env.GAME_NAME} (the bake step in SETUP.md does this) ` +
+			`or set HETZNER_SNAPSHOT_ID to a specific snapshot ID.`
+		);
+	}
+
+	return matching[0].id;
+}
+
 async function startServerAsync(env: Env, appId: string, token: string): Promise<void> {
 	try {
 		const existing = await findServer(env);
@@ -59,10 +96,12 @@ async function startServerAsync(env: Env, appId: string, token: string): Promise
 			return;
 		}
 
+		const snapshotId = await resolveSnapshotId(env);
+
 		const body = {
 			name: env.GAME_NAME,
 			server_type: env.HETZNER_SERVER_TYPE,
-			image: parseInt(env.HETZNER_SNAPSHOT_ID, 10),
+			image: snapshotId,
 			location: env.HETZNER_LOCATION,
 			ssh_keys: [env.HETZNER_SSH_KEY],
 			volumes: [parseInt(env.HETZNER_VOLUME_ID, 10)],

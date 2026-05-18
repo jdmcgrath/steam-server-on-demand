@@ -150,7 +150,7 @@ curl -X POST "https://discord.com/api/v10/applications/APP_ID/commands" \
   }"
 ```
 
-## 4. Worker — first deploy (placeholder snapshot)
+## 4. Worker — deploy
 
 ```bash
 cd worker
@@ -163,7 +163,9 @@ Edit `wrangler.jsonc`:
 - Set `GAME_PORT` to the game's player-connect UDP port.
 - Fill in the IDs from step 2 (`HETZNER_*`).
 - Set `DISCORD_PUBLIC_KEY` from step 3.
-- Leave `HETZNER_SNAPSHOT_ID` as the placeholder for now.
+- Leave `HETZNER_SNAPSHOT_ID` as `"auto"`. The Worker will pick the
+  newest snapshot whose description starts with the game's name after
+  you bake one in step 5.
 
 Set the two secrets:
 
@@ -278,9 +280,14 @@ exit
 From your local machine, snapshot the VM:
 
 ```bash
-hcloud server create-image $GAME-bake --type snapshot --description $GAME-v1
-# note the new image ID
+hcloud server create-image $GAME-bake --type snapshot --description "$GAME-v1"
 ```
+
+The **description starting with `$GAME-`** matters: the Worker
+auto-discovers the latest snapshot whose description begins with the
+game's name, so as long as you follow this convention (`enshrouded-v1`,
+`enshrouded-v2`, etc.) future re-bakes don't require touching the
+Worker config.
 
 Delete the bake VM (saves and snapshot persist):
 
@@ -288,16 +295,7 @@ Delete the bake VM (saves and snapshot persist):
 hcloud server delete $GAME-bake
 ```
 
-## 6. Worker — second deploy (real snapshot)
-
-Edit `wrangler.jsonc` and replace the `HETZNER_SNAPSHOT_ID` placeholder
-with the snapshot ID from step 5. Redeploy:
-
-```bash
-wrangler deploy
-```
-
-## 7. Test
+## 6. Test
 
 In your Discord server:
 

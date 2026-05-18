@@ -25,9 +25,13 @@
 		//   Enshrouded: 15637 | Valheim: 2456 | Palworld: 8211
 		"GAME_PORT": "15637",
 
-		// Hetzner snapshot to boot each VM from. See README for how to bake the
-		// initial snapshot.
-		"HETZNER_SNAPSHOT_ID": "REPLACE_WITH_SNAPSHOT_ID",
+		// Hetzner snapshot to boot each VM from.
+		// Default ("auto") picks the most recent snapshot whose description
+		// starts with `<GAME_NAME>-` (the convention from SETUP.md: `enshrouded-v1`,
+		// `valheim-v1`, etc.). With auto-discovery, re-baking a snapshot doesn't
+		// require redeploying the Worker — /start picks up the newer one.
+		// To pin to a specific snapshot, replace "auto" with the numeric ID.
+		"HETZNER_SNAPSHOT_ID": "auto",
 
 		// Hetzner block volume that holds the persistent world saves; attached
 		// to every VM on creation.
