@@ -28,10 +28,10 @@ counts players via the Steam A2S protocol (or a REST API for Palworld,
 which doesn't speak A2S).
 
 **4/**
-The investigation turned into a good time. The upstream Docker image
-deletes steamcmd's appmanifest on every boot, defeating its own
-snapshot. The shipped watchdog greps for placeholder strings the game
-never actually logs. Phantom container restarts.
+Highlights from the investigation: the upstream Docker image deletes
+steamcmd's appmanifest every boot, defeating its own snapshot. The
+shipped watchdog greps for placeholder strings the game never logs. A
+"phantom container restart" that was just a stale log line.
 
 **5/**
 Now ships for Enshrouded, Valheim, Palworld, V Rising.

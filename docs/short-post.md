@@ -1,8 +1,8 @@
 # [r/<game>] A £2/month on-demand <Game> server you control from Discord
 
 > **Adapting per subreddit:** swap "Enshrouded" in the title for whichever
-> game's subreddit you're posting in (Valheim, Palworld, V Rising all
-> work out of the box). The body below is already game-agnostic.
+> game you're posting about (Valheim, Palworld, V Rising all work out of
+> the box). The body below is already game-agnostic.
 
 Made this for my friend group after I got fed up paying for a server we
 use ~5 hours a week. It's free and open source.

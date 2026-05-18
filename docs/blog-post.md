@@ -10,10 +10,10 @@ Trouble was: the world only existed on my local save. No me, no server,
 no game. The two of them couldn't keep playing without me running the
 host on my desktop.
 
-So we needed a real server. My desktop isn't comfortable hosting while I
-also play, and the dedicated Enshrouded hosts I looked at wanted £14 a
-month minimum, for a server we'd actually use maybe five hours a week.
-Roughly £170 a year for something idle 95% of the time.
+So we needed a real server. My desktop can't comfortably handle both
+hosting and playing, and the dedicated Enshrouded hosts I looked at
+wanted £14 a month minimum for a server we'd actually use maybe five
+hours a week. Roughly £170 a year for something idle 95% of the time.
 
 I work with AWS Lambda every day. Pay-when-you-use is how I think
 about hosting. So my first thought was: surely someone's built this for
@@ -108,9 +108,9 @@ Docker image. Its entrypoint, somewhere near the top, has:
 rm -f "$ENSHROUDED_PATH"/steamapps/appmanifest_*.acf >/dev/null 2>&1 || true
 ```
 
-Steamcmd uses that appmanifest to know what's installed at what version.
-If the manifest is missing, steamcmd assumes nothing is installed and
-re-downloads the whole 8 GB.
+Steamcmd uses that appmanifest to track what's installed and at what
+version. If the manifest is missing, it assumes nothing is installed
+and re-downloads the whole 8 GB.
 
 The author put this there to recover from corrupted state. For most users
 (start a container, leave it running) it's a sensible safety net. For my
@@ -231,8 +231,8 @@ port (8211), even from inside the container hitting localhost. The socket
 was bound, but `/proc/net/udp` showed the receive buffer filling up:
 queries were arriving, the server just wasn't reading them.
 
-[BattleMetrics (the largest game-server monitoring service) explicitly
-states](https://www.battlemetrics.com/servers/palworld/38791379)
+[BattleMetrics](https://www.battlemetrics.com/servers/palworld/38791379),
+the largest game-server monitoring service, explicitly notes that
 *"Palworld does not support player lists"*. Pocketpair (Palworld's
 developer) chose not to implement A2S responses. Instead, they ship a
 built-in REST API on port 8212 with admin-authenticated endpoints for
@@ -253,10 +253,10 @@ docker exec palworld wget -qO- \
   | jq '.players | length'
 ```
 
-This unlocks future games that don't speak A2S: Factorio's UDP protocol,
-Minecraft's GameSpy query, Satisfactory's Unreal-native protocol, all
-addressable through a 20-line per-game probe script with no changes to
-the watchdog itself.
+This unlocks future games that don't speak A2S: Factorio (its own UDP
+protocol), Minecraft (GameSpy query), Satisfactory (Unreal-native
+query). All addressable through a 20-line per-game probe script, with
+no changes to the watchdog itself.
 
 ## Shipping four games
 
@@ -282,8 +282,7 @@ Docker image is well-maintained. Adding a non-A2S game is the same plus a
 
 ## Where I'd love help
 
-Open issues on the repo where I haven't done the work and a PR would
-land happily:
+A few things I haven't built yet where a PR would land happily:
 
 - **More A2S-compatible games.** Project Zomboid, 7 Days to Die,
   Don't Starve Together, Core Keeper, Source-engine titles. Usually
@@ -301,8 +300,8 @@ land happily:
   through Hetzner's user-data field, with the Worker keeping a
   mapping in KV.
 
-- **Terraform module for the Hetzner bootstrap.** The SSH key,
-  firewall, and volume creation is `hcloud` CLI commands today. A
+- **Terraform module for the Hetzner bootstrap.** Today the SSH key,
+  firewall, and volume are created via `hcloud` CLI commands. A
   Terraform module would make it one command and easier to tear down.
 
 - **Skip the two-pass Worker deploy.** You currently deploy once with
