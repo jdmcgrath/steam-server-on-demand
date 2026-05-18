@@ -1,5 +1,9 @@
 # How I built a pay-as-you-play Enshrouded server for around £2 a month
 
+> **Update:** the same architecture now ships out of the box for Valheim
+> and Palworld too — see [Generalising to other games](#generalising-to-other-games)
+> at the bottom. The Enshrouded version is just the first one I built.
+
 Three of us play [Enshrouded](https://store.steampowered.com/app/1203620/Enshrouded/)
 most weekends, maybe five to ten hours all in. The cheapest dedicated host I
 could find wanted £14 a month, billed whether anyone touched the server or
@@ -195,31 +199,53 @@ Moral: when investigating `docker logs` on a snapshot-restored container,
 filter by time aggressively. Or look at `docker inspect --format
 '{{.State.StartedAt}}'` rather than the log timestamps.
 
-## What I'd build differently
+## Generalising to other games
 
-Three things I'd change if I started over, or might still get to:
+The architecture turned out to be 85% game-agnostic. The genuinely
+Enshrouded-specific bits are the Docker image and the two entrypoint
+patches (which only mattered because that particular image deletes its
+own steamcmd state and runs `validate` on every boot — well-maintained
+images like `lloesche/valheim-server` and `thijsvanloef/palworld-server-docker`
+don't have those problems).
 
-- **Skip the two-pass Worker deploy.** Currently you deploy the Worker
-  once with a placeholder snapshot ID, bake the snapshot (which needs the
-  Worker URL), then redeploy with the real ID. Mildly annoying. Could be
-  resolved by having the bake script fetch the Worker URL from a known
-  config key in KV instead of being told it.
+A weekend of refactoring split everything into:
 
-- **Push the "game ready" signal from the VM, not poll for it.**
-  Mentioned above. Cleaner UX, fewer race conditions, doesn't rely on
-  guessing boot time.
+- `games/<name>/` — per-game compose file and `.env.example`, plus an
+  optional `entrypoint.sh` for games that need patches.
+- `worker/` — unchanged shape, but `GAME_NAME` and `GAME_PORT` now come
+  from env vars instead of hardcoded constants.
+- `server/` — generic `game-watchdog` and systemd units; the A2S protocol
+  is identical across games, so the watchdog is one file regardless of
+  what's running on top.
+- `scripts/bake-snapshot.sh GAME=valheim …` — dispatches to the right
+  game folder.
 
-- **Generalise to other Steam games with A2S support.** The watchdog and
-  the entrypoint patches are Enshrouded-specific only by accident — the
-  same trick works for Valheim, Palworld, V Rising, Project Zomboid,
-  anything that ships a dedicated server with the Steam query protocol.
-  A config file that picks the game on bake would unlock the same value
-  for groups playing those games.
+Adding a new A2S-compatible game (V Rising, Project Zomboid, 7 Days to
+Die, Source-engine games) is now a single new folder under `games/`
+containing a compose template and an env file. A weekend of work
+unlocked the same per-game savings for everything in that category.
 
-- **Terraform for the Hetzner bootstrap.** Right now the SSH key,
-  firewall, and volume are created by `hcloud` CLI commands in the
-  setup guide. A Terraform module would make it one command and easier
-  to tear down at the end of a session if someone wanted to.
+## What's still on the list
+
+- **Push the "game ready" signal from the VM, not poll for it.** Currently
+  the Worker polls Hetzner status then sleeps for a fixed 35 seconds.
+  Cleaner UX would have the entrypoint curl back to the Worker once the
+  game's actually serving — needs the Discord interaction token plumbed
+  through the Hetzner user-data field with the Worker keeping a mapping
+  in KV.
+
+- **Skip the two-pass Worker deploy.** You deploy once with a placeholder
+  snapshot ID, bake, redeploy with the real ID. Resolvable by having the
+  bake script discover the Worker URL from a known KV key instead of
+  being told it.
+
+- **Terraform for the Hetzner bootstrap.** The SSH key, firewall, and
+  volume creation is currently `hcloud` CLI commands in the setup guide.
+  A Terraform module would make it one command and easier to tear down.
+
+- **Non-A2S games.** Satisfactory, Factorio, and a handful of others
+  ship their own query protocols. Currently out of scope but a clean
+  extension point: per-game protocol modules in `games/<name>/probe.py`.
 
 ## Why I bothered to write this up
 

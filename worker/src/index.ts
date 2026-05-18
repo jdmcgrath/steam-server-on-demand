@@ -10,10 +10,14 @@ interface Env {
 	HETZNER_SERVER_TYPE: string;
 	DISCORD_PUBLIC_KEY: string;
 	WATCHDOG_SECRET: string;
+	// Identifier for the game this Worker manages. Used as the Hetzner VM name
+	// (must be unique within your Hetzner project — pick e.g. "enshrouded",
+	// "valheim", "palworld" if running multiple Workers).
+	GAME_NAME: string;
+	// UDP port the game listens on for player connections — shown in connect
+	// info. Enshrouded 15637, Valheim 2456, Palworld 8211.
+	GAME_PORT: string;
 }
-
-const SERVER_NAME = 'enshrouded';
-const GAME_PORT = 15637;
 
 async function hetzner(env: Env, path: string, init?: RequestInit): Promise<any> {
 	const r = await fetch(`https://api.hetzner.cloud/v1${path}`, {
@@ -30,7 +34,7 @@ async function hetzner(env: Env, path: string, init?: RequestInit): Promise<any>
 }
 
 async function findServer(env: Env) {
-	const data = await hetzner(env, `/servers?name=${SERVER_NAME}`);
+	const data = await hetzner(env, `/servers?name=${env.GAME_NAME}`);
 	return data?.servers?.[0] ?? null;
 }
 
@@ -51,12 +55,12 @@ async function startServerAsync(env: Env, appId: string, token: string): Promise
 		const existing = await findServer(env);
 		if (existing) {
 			await patchInteractionMessage(appId, token,
-				`Already running at \`${existing.public_net.ipv4.ip}:${GAME_PORT}\``);
+				`Already running at \`${existing.public_net.ipv4.ip}:${env.GAME_PORT}\``);
 			return;
 		}
 
 		const body = {
-			name: SERVER_NAME,
+			name: env.GAME_NAME,
 			server_type: env.HETZNER_SERVER_TYPE,
 			image: parseInt(env.HETZNER_SNAPSHOT_ID, 10),
 			location: env.HETZNER_LOCATION,
@@ -72,7 +76,7 @@ async function startServerAsync(env: Env, appId: string, token: string): Promise
 		const ip = created.server.public_net.ipv4.ip;
 		const serverId = created.server.id;
 
-		await patchInteractionMessage(appId, token, `🟡 Provisioning server at \`${ip}\`…`);
+		await patchInteractionMessage(appId, token, `🟡 Provisioning ${env.GAME_NAME} server at \`${ip}\`…`);
 
 		let ready = false;
 		for (let i = 0; i < 24; i++) {
@@ -83,15 +87,15 @@ async function startServerAsync(env: Env, appId: string, token: string): Promise
 
 		if (!ready) {
 			await patchInteractionMessage(appId, token,
-				`⚠️ Server still provisioning at \`${ip}\` — taking longer than usual. Try \`/enshrouded status\`.`);
+				`⚠️ Server still provisioning at \`${ip}\` — taking longer than usual. Use the status command to check.`);
 			return;
 		}
 
-		await patchInteractionMessage(appId, token, `🟡 VM up at \`${ip}\`, game booting…`);
+		await patchInteractionMessage(appId, token, `🟡 VM up at \`${ip}\`, ${env.GAME_NAME} booting…`);
 		await sleep(35000);
 
 		await patchInteractionMessage(appId, token,
-			`🟢 Server is live! Connect to \`${ip}:${GAME_PORT}\``);
+			`🟢 ${env.GAME_NAME} server is live! Connect to \`${ip}:${env.GAME_PORT}\``);
 	} catch (e: any) {
 		await patchInteractionMessage(appId, token, `❌ ${e.message}`);
 	}
@@ -119,8 +123,8 @@ async function stopServer(env: Env, ctx: ExecutionContext): Promise<string> {
 
 async function statusServer(env: Env): Promise<string> {
 	const s = await findServer(env);
-	if (!s) return '⚪ No server running.';
-	return `🟢 Running at \`${s.public_net.ipv4.ip}:${GAME_PORT}\` (${s.status})`;
+	if (!s) return `⚪ No ${env.GAME_NAME} server running.`;
+	return `🟢 ${env.GAME_NAME} running at \`${s.public_net.ipv4.ip}:${env.GAME_PORT}\` (${s.status})`;
 }
 
 function hexToBytes(hex: string): Uint8Array {

@@ -1,0 +1,27 @@
+services:
+  valheim:
+    image: lloesche/valheim-server:latest
+    container_name: valheim
+    restart: unless-stopped
+    stop_grace_period: 90s
+    # Valheim needs three consecutive UDP ports starting at SERVER_PORT.
+    ports:
+      - "2456:2456/udp"   # game
+      - "2457:2457/udp"   # Steam server browser (A2S query lands here)
+      - "2458:2458/udp"   # used internally by the server
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-Valheim On-Demand}
+      - WORLD_NAME=${WORLD_NAME:-Dedicated}
+      - SERVER_PASS=${SERVER_PASSWORD}
+      - SERVER_PUBLIC=${SERVER_PUBLIC:-false}
+      - SERVER_PORT=2456
+    volumes:
+      # Persistent block volume mounted on the VM at /mnt/saves — Valheim's
+      # config + worlds + characters live here.
+      - /mnt/saves:/config
+      # Named volume on the VM's root disk — captured by the snapshot so
+      # the game binaries don't redownload every boot.
+      - valheim-game:/opt/valheim
+
+volumes:
+  valheim-game:

@@ -16,6 +16,15 @@
 	"upload_source_maps": true,
 	"compatibility_flags": ["nodejs_compat"],
 	"vars": {
+		// Which game this Worker manages. Used as the Hetzner VM name (must be
+		// unique within your Hetzner project — pick "enshrouded", "valheim",
+		// "palworld", etc. if you run multiple Workers).
+		"GAME_NAME": "enshrouded",
+
+		// UDP port the game listens on for player connections.
+		//   Enshrouded: 15637 | Valheim: 2456 | Palworld: 8211
+		"GAME_PORT": "15637",
+
 		// Hetzner snapshot to boot each VM from. See README for how to bake the
 		// initial snapshot.
 		"HETZNER_SNAPSHOT_ID": "REPLACE_WITH_SNAPSHOT_ID",
@@ -24,7 +33,7 @@
 		// to every VM on creation.
 		"HETZNER_VOLUME_ID": "REPLACE_WITH_VOLUME_ID",
 
-		// Hetzner firewall applied on server creation (open UDP 15637 for game,
+		// Hetzner firewall applied on server creation (open the game's UDP port,
 		// SSH from your IP for admin).
 		"HETZNER_FIREWALL_ID": "REPLACE_WITH_FIREWALL_ID",
 
@@ -35,6 +44,7 @@
 		"HETZNER_LOCATION": "fsn1",
 
 		// Hetzner server type. cpx32 = 4 vCPU / 8 GB, handles 4 players easily.
+		// Palworld is heavy — consider ccx13 (dedicated CPU) for 8+ players.
 		"HETZNER_SERVER_TYPE": "cpx32",
 
 		// Discord application public key (Application → General Information).

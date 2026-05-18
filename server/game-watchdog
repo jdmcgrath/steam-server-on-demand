@@ -6,13 +6,13 @@
 # (which deletes the Hetzner VM).
 #
 # Required runtime files on the host:
-#   /etc/enshrouded/worker-url   contains the Worker /api/cleanup URL
-#   /etc/enshrouded/secret       shared secret matching WATCHDOG_SECRET in Worker
+#   /etc/game-server/worker-url   contains the Worker /api/cleanup URL
+#   /etc/game-server/secret       shared secret matching WATCHDOG_SECRET in Worker
 #
 set -euo pipefail
 
-WORKER_URL="$(cat /etc/enshrouded/worker-url)"
-SECRET="$(cat /etc/enshrouded/secret)"
+WORKER_URL="$(cat /etc/game-server/worker-url)"
+SECRET="$(cat /etc/game-server/secret)"
 IDLE_MINUTES="${IDLE_MINUTES:-60}"
 QUERY_PORT="${QUERY_PORT:-15637}"
 POLL_INTERVAL="${POLL_INTERVAL:-60}"
@@ -46,7 +46,7 @@ PYEOF
 }
 
 idle_since=$(date +%s)
-logger "enshrouded-watchdog: starting (idle limit ${IDLE_MINUTES}m, poll ${POLL_INTERVAL}s, query port ${QUERY_PORT})"
+logger "game-watchdog: starting (idle limit ${IDLE_MINUTES}m, poll ${POLL_INTERVAL}s, query port ${QUERY_PORT})"
 
 while true; do
   sleep "$POLL_INTERVAL"
@@ -54,7 +54,7 @@ while true; do
   if count=$(a2s_player_count 2>/dev/null); then
     if [ "$count" -gt 0 ]; then
       idle_since=$(date +%s)
-      logger "enshrouded-watchdog: ${count} player(s) online, idle timer reset"
+      logger "game-watchdog: ${count} player(s) online, idle timer reset"
       continue
     fi
     state="0 players"
@@ -63,11 +63,11 @@ while true; do
   fi
 
   idle_for_min=$(( ($(date +%s) - idle_since) / 60 ))
-  logger "enshrouded-watchdog: ${state}, idle for ${idle_for_min}m / ${IDLE_MINUTES}m"
+  logger "game-watchdog: ${state}, idle for ${idle_for_min}m / ${IDLE_MINUTES}m"
 
   if [ "$idle_for_min" -ge "$IDLE_MINUTES" ]; then
-    logger "enshrouded-watchdog: idle threshold reached, shutting down"
-    cd /etc/enshrouded && docker compose down
+    logger "game-watchdog: idle threshold reached, shutting down"
+    cd /etc/game-server && docker compose down
     sleep 30
     curl -fsS -X POST "$WORKER_URL" \
       -H "Authorization: Bearer ${SECRET}" \

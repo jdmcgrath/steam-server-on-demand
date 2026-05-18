@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 #
-# bake-snapshot.sh — provision a fresh Debian VM so it can become the source
-# of the enshrouded-on-demand snapshot. Run as root on the bake VM, after
-# attaching the persistent saves volume.
+# bake-snapshot.sh — provision a fresh Debian VM to be the source of an
+# on-demand game-server snapshot. Run as root on the bake VM, after attaching
+# the persistent saves volume.
 #
 # Required env vars:
-#   WORKER_URL        e.g. https://enshrouded.you.workers.dev/api/cleanup
+#   GAME              one of: enshrouded | valheim | palworld
+#                     (any subdirectory under games/ that has a
+#                     docker-compose.yml.example and .env.example)
+#   WORKER_URL        e.g. https://yourgame.you.workers.dev/api/cleanup
 #   WATCHDOG_SECRET   shared secret matching WATCHDOG_SECRET in the Worker
-#   SERVER_NAME       displayed name of the game server
-#   SERVER_PASSWORD   Enshrouded server password
+#
+# Game-specific env vars are forwarded into /etc/game-server/.env, overriding
+# the defaults from games/<GAME>/.env.example. See that file for what each
+# game expects (SERVER_NAME, SERVER_PASSWORD, etc.).
 #
 # Optional env vars:
-#   SERVER_SLOTS      default 4
 #   VOLUME_DEV        block device of the attached saves volume (default /dev/sdb)
 #   REPO_DIR          path to this checkout (default: directory above this script)
 #
@@ -20,14 +24,24 @@ set -euo pipefail
 require() {
 	if [ -z "${!1:-}" ]; then echo "ERROR: \$$1 is required" >&2; exit 1; fi
 }
+require GAME
 require WORKER_URL
 require WATCHDOG_SECRET
-require SERVER_NAME
-require SERVER_PASSWORD
 
-SERVER_SLOTS="${SERVER_SLOTS:-4}"
 VOLUME_DEV="${VOLUME_DEV:-/dev/sdb}"
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+GAME_DIR="$REPO_DIR/games/$GAME"
+
+if [ ! -d "$GAME_DIR" ]; then
+	echo "ERROR: no game definition at $GAME_DIR" >&2
+	echo "Available games:" >&2
+	ls -1 "$REPO_DIR/games" >&2
+	exit 1
+fi
+if [ ! -f "$GAME_DIR/docker-compose.yml.example" ]; then
+	echo "ERROR: $GAME_DIR is missing docker-compose.yml.example" >&2
+	exit 1
+fi
 
 if [ "$EUID" -ne 0 ]; then
 	echo "ERROR: must be run as root" >&2
@@ -65,45 +79,61 @@ grep -q "$VOL_UUID" /etc/fstab \
 	|| echo "UUID=$VOL_UUID /mnt/saves ext4 defaults,nofail 0 2" >> /etc/fstab
 chown 10000:10000 /mnt/saves
 
-echo "==> Installing server files from $REPO_DIR"
-mkdir -p /etc/enshrouded
-install -m 0644 "$REPO_DIR/server/docker-compose.yml.example"      /etc/enshrouded/docker-compose.yml
-install -m 0755 "$REPO_DIR/server/entrypoint.sh"                   /etc/enshrouded/entrypoint.sh
-install -m 0755 "$REPO_DIR/server/enshrouded-watchdog"             /usr/local/bin/enshrouded-watchdog
-install -m 0644 "$REPO_DIR/server/systemd/enshrouded.service"      /etc/systemd/system/enshrouded.service
-install -m 0644 "$REPO_DIR/server/systemd/enshrouded-watchdog.service" /etc/systemd/system/enshrouded-watchdog.service
+echo "==> Installing game-server files for '$GAME'"
+mkdir -p /etc/game-server
+install -m 0644 "$GAME_DIR/docker-compose.yml.example"           /etc/game-server/docker-compose.yml
+if [ -f "$GAME_DIR/entrypoint.sh" ]; then
+	install -m 0755 "$GAME_DIR/entrypoint.sh"                    /etc/game-server/entrypoint.sh
+fi
+install -m 0755 "$REPO_DIR/server/game-watchdog"                 /usr/local/bin/game-watchdog
+install -m 0644 "$REPO_DIR/server/systemd/game-server.service"   /etc/systemd/system/game-server.service
+install -m 0644 "$REPO_DIR/server/systemd/game-watchdog.service" /etc/systemd/system/game-watchdog.service
 
 echo "==> Writing runtime config"
+# Start from the game's .env.example and overlay any env vars the caller set.
 umask 077
-cat > /etc/enshrouded/.env <<EOF
-SERVER_NAME=$SERVER_NAME
-SERVER_PASSWORD=$SERVER_PASSWORD
-SERVER_SLOTS=$SERVER_SLOTS
-EOF
-printf '%s\n' "$WORKER_URL"      > /etc/enshrouded/worker-url
-printf '%s\n' "$WATCHDOG_SECRET" > /etc/enshrouded/secret
-chmod 644 /etc/enshrouded/worker-url
+cp "$GAME_DIR/.env.example" /etc/game-server/.env
+# For every line `KEY=default` in .env.example, if $KEY is set in the
+# environment, replace it. Lets the caller override any default without
+# knowing which vars a given game uses.
+while IFS='=' read -r key default; do
+	[[ -z "$key" || "$key" =~ ^# ]] && continue
+	value="${!key:-}"
+	if [ -n "$value" ]; then
+		# escape & and / and \ for sed replacement
+		safe_value=$(printf '%s' "$value" | sed -e 's/[\/&]/\\&/g')
+		sed -i "s|^${key}=.*|${key}=${safe_value}|" /etc/game-server/.env
+	fi
+done < /etc/game-server/.env
+
+printf '%s\n' "$WORKER_URL"      > /etc/game-server/worker-url
+printf '%s\n' "$WATCHDOG_SECRET" > /etc/game-server/secret
+chmod 644 /etc/game-server/worker-url
 umask 022
 
 echo "==> Enabling systemd units"
 systemctl daemon-reload
-systemctl enable enshrouded.service enshrouded-watchdog.service >/dev/null
+systemctl enable game-server.service game-watchdog.service >/dev/null
 
-echo "==> Starting Enshrouded server (triggers the one-off ~8 GB Steam download)"
-systemctl start enshrouded.service
+echo "==> Starting $GAME server (triggers the one-off Steam download)"
+systemctl start game-server.service
 
 cat <<NEXT
 
-Bake setup is done. The container is now downloading Enshrouded from Steam.
+Bake setup done for '$GAME'. The container is now downloading the game
+from Steam.
 
 Watch progress:
-  docker logs -f enshrouded
+  docker logs -f \$(docker ps --filter ancestor=$(grep '^[[:space:]]*image:' /etc/game-server/docker-compose.yml | awk '{print $2}' | head -1) --format '{{.Names}}')
 
-When you see "HostOnline (up)!" in the logs (typically 5–10 min), stop the
-container so the writable layer is captured cleanly by the snapshot:
-  cd /etc/enshrouded && docker compose stop
+Or simply:
+  docker ps && docker logs -f <container-name>
+
+When the server reports it's up and listening (5–15 min depending on game),
+stop the container so the snapshot captures a clean state:
+  cd /etc/game-server && docker compose stop
 
 Then exit the SSH session and snapshot from your local machine:
-  hcloud server create-image enshrouded-bake --type snapshot --description enshrouded-v1
+  hcloud server create-image <bake-vm-name> --type snapshot --description $GAME-v1
 
 NEXT

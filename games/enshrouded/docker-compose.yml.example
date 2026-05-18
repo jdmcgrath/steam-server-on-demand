@@ -22,7 +22,7 @@ services:
       # captured by the snapshot so fresh VMs don't redownload.
       - enshrouded-game:/home/steam/enshrouded
       # Bind-mount our patched entrypoint over the upstream one.
-      - /etc/enshrouded/entrypoint.sh:/home/steam/entrypoint.sh:ro
+      - /etc/game-server/entrypoint.sh:/home/steam/entrypoint.sh:ro
 
 volumes:
   enshrouded-game:

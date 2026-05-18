@@ -1,0 +1,30 @@
+services:
+  palworld:
+    image: thijsvanloef/palworld-server-docker:latest
+    container_name: palworld
+    restart: unless-stopped
+    stop_grace_period: 90s
+    ports:
+      - "8211:8211/udp"        # game + A2S query
+      # Uncomment if you want RCON (admin commands over network):
+      # - "25575:25575/tcp"
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-Palworld On-Demand}
+      - SERVER_DESCRIPTION=${SERVER_DESCRIPTION:-On-demand Palworld server}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MAX_PLAYERS=${MAX_PLAYERS:-32}
+      - PUBLIC_PORT=8211
+      - COMMUNITY_SERVER=${COMMUNITY_SERVER:-false}
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      # Persistent block volume mounted on the VM at /mnt/saves — Palworld's
+      # save data lives here.
+      - /mnt/saves:/palworld/Pal/Saved
+      # Named volume on the VM's root disk — captured by the snapshot so the
+      # game binaries don't redownload every boot.
+      - palworld-game:/palworld
+
+volumes:
+  palworld-game:
