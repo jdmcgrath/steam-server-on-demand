@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+          scandir: '.'
+          ignore_paths: worker/node_modules
+
+  worker-typecheck:
+    name: Worker typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - name: Install
+        working-directory: worker
+        run: npm ci
+      - name: Type-check
+        working-directory: worker
+        run: npx tsc --noEmit
+
+  compose-validate:
+    name: docker-compose validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate each game's compose file
+        run: |
+          set -e
+          for game_dir in games/*/; do
+            game=$(basename "$game_dir")
+            compose="$game_dir/docker-compose.yml.example"
+            if [ ! -f "$compose" ]; then
+              echo "SKIP $game (no compose file)"
+              continue
+            fi
+            # The compose files reference env vars and /etc/game-server paths
+            # that don't exist at CI time, but we can still validate YAML
+            # syntax + structure by setting required vars to dummy values.
+            export SERVER_PASSWORD=ci-dummy
+            export ADMIN_PASSWORD=ci-dummy
+            echo "==> $game"
+            docker compose -f "$compose" --env-file /dev/null config --quiet
+          done

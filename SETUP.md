@@ -68,14 +68,26 @@ Upload your SSH public key (do once per Hetzner project):
 hcloud ssh-key create --name "$USER" --public-key-from-file ~/.ssh/id_ed25519.pub
 ```
 
-### Firewall
+### One-shot option
+
+If your shell has the repo cloned and `hcloud` configured, run:
+
+```bash
+bash scripts/setup-hetzner.sh $GAME
+```
+
+That script creates (or reuses) the SSH key, firewall, and saves
+volume in one go, and prints the IDs you need for `wrangler.jsonc`.
+Skip to §3 once it's done.
+
+### Manual option (if you want to see what's happening)
 
 Open the game's UDP port (or port range). Check the game's README for
 exact numbers. Example for Enshrouded (UDP 15637):
 
 ```bash
-hcloud firewall create --name $GAME-fw
-hcloud firewall add-rule $GAME-fw \
+hcloud firewall create --name $GAME
+hcloud firewall add-rule $GAME \
     --direction in --protocol udp --port 15637 --source-ips 0.0.0.0/0,::/0
 ```
 
@@ -84,11 +96,11 @@ Valheim needs UDP 2456–2458, Palworld needs UDP 8211. See `games/<GAME>/README
 Lock SSH down to your home IP only (replace `YOUR.IP.ADDR.ESS`):
 
 ```bash
-hcloud firewall add-rule $GAME-fw \
+hcloud firewall add-rule $GAME \
     --direction in --protocol tcp --port 22 --source-ips YOUR.IP.ADDR.ESS/32
 ```
 
-### Persistent volume
+Persistent volume:
 
 ```bash
 hcloud volume create --name $GAME-saves --size 10 --location fsn1

@@ -114,6 +114,17 @@ The bake script lives in `scripts/bake-snapshot.sh` and is plain
 bash. Run `bash -n scripts/bake-snapshot.sh` to syntax-check; running
 it for real requires a Hetzner VM with a volume attached.
 
+## Code of Conduct
+
+This project follows the
+[Contributor Covenant](./CODE_OF_CONDUCT.md). In short: be respectful,
+assume good faith.
+
+## Security
+
+Found a vulnerability? Don't open a public issue — see
+[SECURITY.md](./SECURITY.md) for the private disclosure process.
+
 ## License
 
 By contributing, you agree your contributions are licensed under the
