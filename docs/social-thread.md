@@ -15,9 +15,8 @@ So I built pay-as-you-play game hosting. ~£2/mo for four games.
 Cloudflare Free + a few hours of Hetzner per week.
 
 **2/**
-Type `/enshrouded start` in Discord → fresh VM boots from a snapshot
-→ game playable in 75–90 seconds. Idle for 60 min → auto-shutdown, VM
-deleted.
+Type `/enshrouded start` in Discord → fresh VM from a snapshot, game
+playable in 75–90s. Idle 60 min → auto-shutdown, VM deleted.
 
 Aternos figured this out for Minecraft a decade ago. Nothing existed
 for the games we play.
