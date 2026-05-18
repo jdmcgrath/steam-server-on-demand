@@ -169,7 +169,7 @@ open-source Docker images. The people who maintain them did the
 actually-hard work of packaging dedicated game servers in a way that
 runs reliably under Wine, Proton, and steamcmd:
 
-- [`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server)
+- [`sknnr/enshrouded-dedicated-server`](https://github.com/jsknnr/enshrouded-server)
   — Enshrouded
 - [`lloesche/valheim-server`](https://github.com/lloesche/valheim-server-docker)
   — Valheim

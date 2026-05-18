@@ -4,7 +4,7 @@
 |---|---|
 | Steam page | <https://store.steampowered.com/app/1203620/> |
 | App ID | 2278520 |
-| Container image | [`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server) |
+| Container image | [`sknnr/enshrouded-dedicated-server`](https://github.com/jsknnr/enshrouded-server) |
 | Default game/query port | UDP 15637 |
 | Player slots | 4 (configurable) |
 

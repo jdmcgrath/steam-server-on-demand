@@ -100,7 +100,7 @@ So I started digging.
 ### Discovery 1: the upstream image defeats its own snapshot caching
 
 I'm using the excellent
-[`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server)
+[`sknnr/enshrouded-dedicated-server`](https://github.com/jsknnr/enshrouded-server)
 Docker image. Its entrypoint, somewhere near the top, has:
 
 ```bash
@@ -231,12 +231,15 @@ port (8211), even from inside the container hitting localhost. The socket
 was bound, but `/proc/net/udp` showed the receive buffer filling up:
 queries were arriving, the server just wasn't reading them.
 
-[BattleMetrics](https://www.battlemetrics.com/servers/palworld/38791379),
-the largest game-server monitoring service, explicitly notes that
-*"Palworld does not support player lists"*. Pocketpair (Palworld's
-developer) chose not to implement A2S responses. Instead, they ship a
-built-in REST API on port 8212 with admin-authenticated endpoints for
-server info, settings, and (crucially) the player list.
+Pocketpair (Palworld's developer) chose not to implement A2S responses
+in the dedicated server. Confirmation that this is deliberate, not just
+my server misbehaving: the standard community Docker image ships a
+built-in **REST API on port 8212** specifically for player tracking,
+and its `ENABLE_PLAYER_LOGGING` setting explicitly requires
+`REST_API_ENABLED=true` — i.e. the maintainer built around A2S not
+working rather than trying to make it work. The REST API has
+admin-authenticated endpoints for server info, settings, and
+(crucially) the live player list.
 
 So Palworld needed a different probe. I extended the watchdog with a
 dispatch model: if `/etc/game-server/probe.sh` exists, run that and trust

@@ -18,12 +18,12 @@ and handles steamcmd state correctly across snapshot reuse.
 
 Palworld's dedicated server doesn't reliably respond to Steam A2S
 queries. The socket binds, but the server process never reads incoming
-queries — packets sit in the receive buffer forever.
-[BattleMetrics](https://www.battlemetrics.com/servers/palworld/38791379)
-explicitly notes *"Palworld does not support player lists"*.
+queries — packets sit in the receive buffer forever. Pocketpair
+(Palworld's developer) chose not to implement A2S responses.
 
-The `thijsvanloef` image works around this by exposing a built-in
-**REST API on port 8212** that returns the live player list. The
+The [`thijsvanloef`](https://github.com/thijsvanloef/palworld-server-docker)
+image works around this by exposing a built-in **REST API on port
+8212** that returns the live player list. The
 watchdog dispatches to [`probe.sh`](./probe.sh) which authenticates as
 `admin:$ADMIN_PASSWORD` against
 `http://127.0.0.1:8212/v1/api/players` and returns the count.
