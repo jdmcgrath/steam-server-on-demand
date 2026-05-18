@@ -8,12 +8,21 @@ services:
       - "9876:9876/udp"   # game
       - "9877:9877/udp"   # Steam server browser (A2S query lands here)
     environment:
-      - SERVER_NAME=${SERVER_NAME:-V Rising On-Demand}
-      - SERVER_PASSWORD=${SERVER_PASSWORD}
-      - SERVER_DESCRIPTION=${SERVER_DESCRIPTION:-On-demand V Rising server}
-      - SERVER_PORT=9876
-      - SERVER_QUERY_PORT=9877
-      - SERVER_MAX_USERS=${SERVER_MAX_USERS:-10}
+      # The trueosiris image overrides fields in ServerHostSettings.json from
+      # HOST_SETTINGS_<field> env vars on every container start. Names are
+      # case-insensitive and map directly to the JSON keys. Observed during
+      # testing: the documented SERVERNAME direct env var doesn't reliably
+      # set the Name field — use HOST_SETTINGS_Name instead.
+      - HOST_SETTINGS_Name=${SERVER_NAME:-V Rising On-Demand}
+      - GAMEPORT=9876
+      - QUERYPORT=9877
+      - HOST_SETTINGS_Description=${SERVER_DESCRIPTION:-On-demand V Rising server}
+      - HOST_SETTINGS_Password=${SERVER_PASSWORD}
+      - HOST_SETTINGS_MaxConnectedUsers=${SERVER_MAX_USERS:-10}
+      # Required for A2S to respond — V Rising suppresses Steam queries when
+      # the server isn't publicly listed. SERVER_PASSWORD still gates joins,
+      # so "listed" here just means "visible in the Steam community browser".
+      - HOST_SETTINGS_ListOnSteam=true
       - TZ=${TZ:-Etc/UTC}
     volumes:
       # Persistent block volume mounted on the VM at /mnt/saves — V Rising's

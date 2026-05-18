@@ -15,7 +15,7 @@ time.
 |---|---|---|---|
 | [Enshrouded](./games/enshrouded) | `sknnr/enshrouded-dedicated-server` | ✅ tested in production | UDP 15637 / 15637 |
 | [Valheim](./games/valheim) | `lloesche/valheim-server` | ✅ tested end-to-end | UDP 2456 / 2457 |
-| [V Rising](./games/vrising) | `trueosiris/vrising` | 🟡 configured, untested | UDP 9876 / 9877 |
+| [V Rising](./games/vrising) | `trueosiris/vrising` | ✅ tested end-to-end | UDP 9876 / 9877 |
 | [Palworld](./games/palworld) | `thijsvanloef/palworld-server-docker` | ✅ tested end-to-end | UDP 8211 / REST API on 8212 (internal) |
 
 Want another A2S-compatible Steam game (Project Zomboid, 7 Days to
