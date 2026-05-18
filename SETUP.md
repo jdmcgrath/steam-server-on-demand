@@ -12,12 +12,16 @@ volumes and firewalls can be shared if you want).
 
 ### Local tools
 
-| Tool | Install |
-|------|---------|
-| [`hcloud`](https://github.com/hetznercloud/cli) | `brew install hcloud` |
-| [`wrangler`](https://developers.cloudflare.com/workers/wrangler/install-and-update/) | `npm i -g wrangler` |
-| Node.js 20+ | `brew install node` |
-| `jq`, `curl`, `openssl`, `git` | usually already installed |
+| Tool | macOS | Linux | Windows |
+|------|-------|-------|---------|
+| [`hcloud`](https://github.com/hetznercloud/cli) | `brew install hcloud` | [pre-built binary from releases](https://github.com/hetznercloud/cli/releases), or `pacman -S hcloud` / AUR | `scoop install hcloud` or pre-built binary |
+| [`wrangler`](https://developers.cloudflare.com/workers/wrangler/install-and-update/) | `npm i -g wrangler` | `npm i -g wrangler` | `npm i -g wrangler` |
+| Node.js 20+ | `brew install node` | distro package or [nodejs.org](https://nodejs.org) | [nodejs.org](https://nodejs.org) |
+| `jq`, `curl`, `openssl`, `git` | usually already installed | `apt install jq` etc. | use WSL2 |
+
+> **Windows users:** the bake step SSHes into a Debian VM and runs
+> bash. Use WSL2 (or any Linux/macOS machine) for the parts of this
+> guide that run locally — the Hetzner VM itself doesn't care.
 
 ### Accounts
 

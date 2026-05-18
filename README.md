@@ -1,5 +1,10 @@
 # steam-server-on-demand
 
+[![License: MIT](https://img.shields.io/github/license/jdmcgrath/steam-server-on-demand)](./LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/jdmcgrath/steam-server-on-demand)](https://github.com/jdmcgrath/steam-server-on-demand/commits/main)
+[![Stars](https://img.shields.io/github/stars/jdmcgrath/steam-server-on-demand)](https://github.com/jdmcgrath/steam-server-on-demand/stargazers)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
+
 **Pay-as-you-play dedicated hosting for any Steam game with A2S support.**
 
 Discord-controlled. Spins up on demand in about a minute, auto-shuts down
@@ -8,6 +13,10 @@ when nobody's playing, and persists your world saves across sessions.
 Built for groups who play a few hours a week and don't want a flat
 £10–20 per month hosting bill for a server that sits idle 95% of the
 time.
+
+> Not a business pitch — there's no SaaS, no paid tier, no signup. It's
+> open source (MIT) for anyone who wants cheap dedicated hosting for
+> the games they play with their friends.
 
 ## Supported games
 
@@ -23,10 +32,11 @@ Die, Don't Starve Together, Core Keeper, CS2 / Source-engine games)?
 A new folder under `games/` with a compose file and an `.env.example`
 is usually all it takes. See `games/valheim/` for the template.
 
-Non-Steam-A2S games (Minecraft, Factorio, Satisfactory) are intentionally
-out of scope — they'd need per-game player-detection probes and a
-parallel set of conventions. PRs that add them via a clean per-game
-probe interface are welcome but not on the roadmap.
+Non-A2S games (Minecraft, Factorio, Satisfactory) need a per-game
+player-detection probe rather than the default A2S one. The
+extension point exists (`games/<name>/probe.sh`); see
+[`games/palworld/probe.sh`](./games/palworld/probe.sh) for a worked
+example. PRs to add any of these welcome.
 
 ## How it works
 
@@ -64,7 +74,7 @@ probe interface are welcome but not on the roadmap.
   zero players, the watchdog calls back to the Worker, which deletes the
   VM.
 - **Persistent block volume** is attached to each VM and holds the world
-  save files — survives the VM lifecycle so the same world loads every
+  save files. Survives the VM lifecycle so the same world loads every
   session.
 
 ## Cost
@@ -98,12 +108,12 @@ docs/
 
 One Worker deployment per game. Run multiple games by deploying multiple
 Workers (different `name` in `wrangler.jsonc`, different `GAME_NAME` env
-var, different snapshot — Hetzner volumes and firewalls can be shared or
+var, different snapshot. Hetzner volumes and firewalls can be shared or
 separated as you prefer).
 
 ## Setup
 
-See [**SETUP.md**](./SETUP.md) for the end-to-end walkthrough — Hetzner
+See [**SETUP.md**](./SETUP.md) for the end-to-end walkthrough: Hetzner
 project bootstrap, Discord application, baking the snapshot, deploying
 the Worker. Plan ~45 minutes per game, most of which is the one-off
 Steam download during the bake step.
@@ -111,24 +121,28 @@ Steam download during the bake step.
 You'll need:
 
 - A Hetzner Cloud account (per-hour VM billing)
-- A Cloudflare account (the Free tier is enough — the 75 s background
+- A Cloudflare account (the Free tier is enough; the 75 s background
   poll fits inside Free's CPU/request limits since the work is mostly
   network I/O and `setTimeout`)
 - A Discord application with a bot user per game
 
-## Status
+## Contributing
 
-Early open-source release. Issues and PRs welcome — especially adding
-more games under `games/`, a Terraform alternative to the manual Hetzner
-bootstrap in SETUP.md, and the server-side "ready" callback for tighter
-Discord follow-up timing.
+PRs welcome. The single highest-leverage contribution is adding
+support for another game — usually one new folder under `games/` with
+two files. See [**CONTRIBUTING.md**](./CONTRIBUTING.md) for the
+walkthrough.
+
+Other open issues live on the [issues
+page](https://github.com/jdmcgrath/steam-server-on-demand/issues).
 
 ## Credits
 
 - Enshrouded image: [`sknnr/enshrouded-dedicated-server`](https://github.com/sknnr/enshrouded-dedicated-server)
 - Valheim image: [`lloesche/valheim-server`](https://github.com/lloesche/valheim-server-docker)
+- V Rising image: [`trueosiris/vrising`](https://github.com/TrueOsiris/docker-vrising)
 - Palworld image: [`thijsvanloef/palworld-server-docker`](https://github.com/thijsvanloef/palworld-server-docker)
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
