@@ -40,28 +40,10 @@ example. PRs to add any of these welcome.
 
 ## How it works
 
-```
-        /<game> start
-   ┌──────────────────────┐
-   │                      │
-   │ Discord ─────────────┼──▶ Cloudflare Worker (bot)
-   │                      │           │
-   │   ◀── live status ───┼───┐       │ Hetzner Cloud API
-   │       updates        │   │       ▼
-   └──────────────────────┘   │   ┌─────────────────────────┐
-                              │   │ Hetzner VM (snapshot)   │
-                              │   │  ┌───────────────────┐  │
-                              │   │  │ Docker container  │  │
-                              │   │  │ (game server)     │  │
-                              │   │  └───────────────────┘  │
-                              │   │                         │
-                              └───┼── Watchdog (A2S query   │
-                  /api/cleanup    │     every 60s)          │
-                                  └────────────┬────────────┘
-                                               │
-                                  Persistent block volume
-                                       (world saves)
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/architecture-dark.svg">
+  <img alt="Architecture diagram: Discord ↔ Cloudflare Worker, which creates a Hetzner VM from a snapshot. The VM runs a Docker container (game server) and a Watchdog that queries A2S every 60s and calls /api/cleanup when idle. A persistent block volume attaches to the VM on create and holds the world saves." src="./docs/architecture.svg" width="720">
+</picture>
 
 - **Cloudflare Worker** handles `start | stop | status` Discord slash
   commands. On `start`, it creates a Hetzner VM from a prepared snapshot
