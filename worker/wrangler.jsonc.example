@@ -1,0 +1,43 @@
+/**
+ * Copy this file to wrangler.jsonc, fill in the placeholders, and set the
+ * two secrets via `wrangler secret put`:
+ *
+ *   wrangler secret put HETZNER_TOKEN
+ *   wrangler secret put WATCHDOG_SECRET
+ *
+ * See README for how to obtain the IDs referenced here.
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "enshrouded",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-17",
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"compatibility_flags": ["nodejs_compat"],
+	"vars": {
+		// Hetzner snapshot to boot each VM from. See README for how to bake the
+		// initial snapshot.
+		"HETZNER_SNAPSHOT_ID": "REPLACE_WITH_SNAPSHOT_ID",
+
+		// Hetzner block volume that holds the persistent world saves; attached
+		// to every VM on creation.
+		"HETZNER_VOLUME_ID": "REPLACE_WITH_VOLUME_ID",
+
+		// Hetzner firewall applied on server creation (open UDP 15637 for game,
+		// SSH from your IP for admin).
+		"HETZNER_FIREWALL_ID": "REPLACE_WITH_FIREWALL_ID",
+
+		// Hetzner SSH key name (already uploaded to your Hetzner project).
+		"HETZNER_SSH_KEY": "REPLACE_WITH_SSH_KEY_NAME",
+
+		// Hetzner datacentre (fsn1 / hel1 / nbg1 in Europe; ash / hil1 in US).
+		"HETZNER_LOCATION": "fsn1",
+
+		// Hetzner server type. cpx32 = 4 vCPU / 8 GB, handles 4 players easily.
+		"HETZNER_SERVER_TYPE": "cpx32",
+
+		// Discord application public key (Application → General Information).
+		"DISCORD_PUBLIC_KEY": "REPLACE_WITH_DISCORD_PUBLIC_KEY"
+	}
+}

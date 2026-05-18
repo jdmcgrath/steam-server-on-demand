@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#
+# Idle watchdog. Queries the game's Steam A2S protocol every minute; while
+# any player is connected, the idle timer is held at zero. After IDLE_MINUTES
+# of zero players, performs a graceful shutdown and notifies the Worker
+# (which deletes the Hetzner VM).
+#
+# Required runtime files on the host:
+#   /etc/enshrouded/worker-url   contains the Worker /api/cleanup URL
+#   /etc/enshrouded/secret       shared secret matching WATCHDOG_SECRET in Worker
+#
+set -euo pipefail
+
+WORKER_URL="$(cat /etc/enshrouded/worker-url)"
+SECRET="$(cat /etc/enshrouded/secret)"
+IDLE_MINUTES="${IDLE_MINUTES:-60}"
+QUERY_PORT="${QUERY_PORT:-15637}"
+POLL_INTERVAL="${POLL_INTERVAL:-60}"
+
+a2s_player_count() {
+  python3 - "$QUERY_PORT" <<'PYEOF'
+import socket, sys
+port = int(sys.argv[1])
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.settimeout(3.0)
+payload = b"\xff\xff\xff\xffTSource Engine Query\x00"
+try:
+    s.sendto(payload, ("127.0.0.1", port))
+    data, _ = s.recvfrom(1400)
+    # Steam may respond with a challenge (0x41) — resend with challenge appended.
+    if len(data) >= 5 and data[4] == 0x41:
+        s.sendto(payload + data[5:9], ("127.0.0.1", port))
+        data, _ = s.recvfrom(1400)
+    # Expect A2S_INFO response (0x49).
+    if len(data) < 6 or data[4] != 0x49:
+        sys.exit(2)
+    # Skip 4 null-terminated strings (name, map, folder, game) + 2-byte appid.
+    idx = 6
+    for _ in range(4):
+        idx = data.index(b"\x00", idx) + 1
+    idx += 2
+    print(data[idx])  # player count
+except Exception:
+    sys.exit(1)
+PYEOF
+}
+
+idle_since=$(date +%s)
+logger "enshrouded-watchdog: starting (idle limit ${IDLE_MINUTES}m, poll ${POLL_INTERVAL}s, query port ${QUERY_PORT})"
+
+while true; do
+  sleep "$POLL_INTERVAL"
+
+  if count=$(a2s_player_count 2>/dev/null); then
+    if [ "$count" -gt 0 ]; then
+      idle_since=$(date +%s)
+      logger "enshrouded-watchdog: ${count} player(s) online, idle timer reset"
+      continue
+    fi
+    state="0 players"
+  else
+    state="query failed"
+  fi
+
+  idle_for_min=$(( ($(date +%s) - idle_since) / 60 ))
+  logger "enshrouded-watchdog: ${state}, idle for ${idle_for_min}m / ${IDLE_MINUTES}m"
+
+  if [ "$idle_for_min" -ge "$IDLE_MINUTES" ]; then
+    logger "enshrouded-watchdog: idle threshold reached, shutting down"
+    cd /etc/enshrouded && docker compose down
+    sleep 30
+    curl -fsS -X POST "$WORKER_URL" \
+      -H "Authorization: Bearer ${SECRET}" \
+      -d "{\"server\":\"$(hostname)\"}" || true
+    shutdown -h now
+    exit 0
+  fi
+done

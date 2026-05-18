@@ -1,0 +1,28 @@
+services:
+  enshrouded:
+    image: sknnr/enshrouded-dedicated-server:latest
+    container_name: enshrouded
+    restart: unless-stopped
+    stop_grace_period: 90s
+    # Override the upstream entrypoint with our patched copy (see entrypoint.sh
+    # for what's different and why).
+    entrypoint: ["/home/steam/entrypoint.sh"]
+    ports:
+      - "15637:15637/udp"
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-Enshrouded On-Demand}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - SERVER_SLOTS=${SERVER_SLOTS:-4}
+      - PORT=15637
+    volumes:
+      # Persistent block volume mounted on the VM at /mnt/saves — holds the
+      # world saves across server lifecycles.
+      - /mnt/saves:/home/steam/enshrouded/savegame
+      # Named volume on the VM's root disk — holds the ~8 GB Steam install,
+      # captured by the snapshot so fresh VMs don't redownload.
+      - enshrouded-game:/home/steam/enshrouded
+      # Bind-mount our patched entrypoint over the upstream one.
+      - /etc/enshrouded/entrypoint.sh:/home/steam/entrypoint.sh:ro
+
+volumes:
+  enshrouded-game:

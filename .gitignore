@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build / cache
+*.tsbuildinfo
+dist/
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+worker-configuration.d.ts
+
+# Local secrets / env
+.env
+.env.local
+*.local
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
