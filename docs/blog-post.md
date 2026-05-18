@@ -300,14 +300,16 @@ A few things I haven't built yet where a PR would land happily:
   through Hetzner's user-data field, with the Worker keeping a
   mapping in KV.
 
-- **Terraform module for the Hetzner bootstrap.** Today the SSH key,
-  firewall, and volume are created via `hcloud` CLI commands. A
-  Terraform module would make it one command and easier to tear down.
+- **Cloud-init the bake VM** so users don't have to SSH into it at
+  all. Hetzner accepts cloud-init `user_data` at server-create time,
+  which means the bake could be one `hcloud server create` invocation
+  with the bootstrap script embedded.
 
-- **Skip the two-pass Worker deploy.** You currently deploy once with
-  a placeholder snapshot ID, bake, redeploy with the real ID.
-  Resolvable by having the bake script read the Worker URL from a
-  known KV key instead of being told it.
+- **Pluggable cloud provider.** Today the Worker talks directly to
+  the Hetzner Cloud API. Abstracting that behind a `CloudProvider`
+  interface would let people run the same orchestration on AWS,
+  DigitalOcean, Vultr, Linode — useful both for portability and for
+  groups whose latency is better elsewhere.
 
 ## Why I bothered to write this up
 

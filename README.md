@@ -103,7 +103,7 @@ installed, the whole flow is:
 # 1. Bootstrap the Hetzner side: SSH key, firewall, saves volume
 bash scripts/setup-hetzner.sh enshrouded
 
-# 2. Configure + deploy the Worker (first pass, placeholder snapshot)
+# 2. Configure + deploy the Worker (one deploy, snapshot is auto-discovered)
 cd worker
 cp wrangler.jsonc.example wrangler.jsonc
 $EDITOR wrangler.jsonc                # fill in the IDs from step 1
@@ -123,9 +123,10 @@ export WORKER_URL=https://<your-worker>.workers.dev/api/cleanup \
 curl -fsSL https://raw.githubusercontent.com/jdmcgrath/steam-server-on-demand/main/scripts/bake-bootstrap.sh \
   | bash -s -- enshrouded
 
-# 5. Wait for the steam download, stop the container, take the snapshot,
-#    delete the bake VM. Update HETZNER_SNAPSHOT_ID in wrangler.jsonc.
-cd worker && wrangler deploy
+# 5. Wait for the steam download, stop the container, take the snapshot
+#    (description starts with the game name, e.g. `enshrouded-v1`),
+#    delete the bake VM. No second Worker deploy needed — the Worker
+#    auto-discovers the latest snapshot by description prefix.
 
 # 6. Sanity-check everything wired up correctly
 bash scripts/verify.sh
