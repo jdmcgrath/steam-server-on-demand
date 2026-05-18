@@ -8,14 +8,15 @@ canonical post URL once published.
 
 **1/**
 Last Sunday my friends wanted to play Enshrouded. World was on my
-desktop, I was busy, and dedicated hosts cost £14+/mo for something
-we use 5 hrs a week.
+desktop, I was busy, and dedicated hosts cost £14+/mo per game for
+something we use 5 hrs a week.
 
-So I built pay-as-you-play game hosting. ~£2/month.
+So I built pay-as-you-play game hosting. Pennies in Hetzner usage on
+top of one Cloudflare Workers Paid plan.
 
 **2/**
 Type `/enshrouded start` in Discord → fresh VM boots from a snapshot
-→ game playable in ~75 seconds. Idle for 60 min → auto-shutdown, VM
+→ game playable in 75–90 seconds. Idle for 60 min → auto-shutdown, VM
 deleted.
 
 Aternos figured this out for Minecraft a decade ago. Nothing existed
@@ -41,10 +42,11 @@ Die, Source-engine games) is one new folder under games/ with two
 config files.
 
 **6/**
-Cost: ~£1.60/mo fixed for all four games' infra (volumes + snapshots),
-plus €0.022/hr only when someone's actually playing.
+Cost: $5/mo Cloudflare Workers Paid (flat, covers any number of games)
++ ~£1.60/mo Hetzner fixed for all four games' infra + €0.022/hr only
+when someone's actually playing.
 
-Realistic total for our usage: £1–3/mo. Compared to ~£14/mo per game
+Realistic total ~£8/mo for all four. Compared to ~£14/mo *per game*
 flat from typical hosts.
 
 **7/**

@@ -31,15 +31,17 @@ So I built it.
 What started as a weekend hack for one game turned into something more
 general. The same architecture now ships Discord-controlled,
 pay-as-you-play hosting for **Enshrouded, Valheim, Palworld, and V
-Rising** out of the same repo. Across all four, my expected monthly bill
-is somewhere between £1 and £3.
+Rising** out of the same repo. My Hetzner bill across all four comes
+to roughly £1–3 a month; the only other ongoing cost is the £5
+Cloudflare Workers Paid plan, which I'd be paying anyway for other
+projects (more on that in the cost section below).
 
 The result: a dedicated game server that **doesn't exist** unless
 someone asks for it. Someone types `/enshrouded start` (or `/valheim`,
-or whichever game) in our Discord, a fresh VM spins up in about 75
-seconds, the bot edits its own message to post the connect IP, we play,
-and the server quietly deletes itself an hour after the last person
-leaves.
+or whichever game) in our Discord, a fresh VM spins up in 75–90
+seconds, the bot edits its own message to post the connect IP, we
+play, and the server quietly deletes itself an hour after the last
+person leaves.
 
 The whole thing is on GitHub:
 [**jdmcgrath/steam-server-on-demand**](https://github.com/jdmcgrath/steam-server-on-demand).
@@ -68,23 +70,30 @@ network at no per-request cost worth caring about.
 
 ## The maths
 
-| Component | Cost |
+| Component | Cost (net) |
 |-----------|------|
 | Hetzner CPX 32 VM | €0.022/hour, billed only while running |
 | Per-game block volume (10 GB) | €0.40/month, always allocated |
 | Per-game snapshot (~5–7 GB) | ~€0.08/month |
-| Cloudflare Workers Paid | ~£5/month* |
-| **Fixed cost for all four games** | **~£1.60/month** |
-| **Typical use (5–10 hrs/week per game)** | **~£1–3/month variable on top** |
+| Cloudflare Workers (Paid plan*) | $5/month, covers any number of games |
 
-\* The Workers Paid plan is the only fixed cost that's a bit annoying. The
-free tier's `waitUntil` budget isn't long enough for the 75-second
-background poll the start flow needs. But £5 a month buys you 10 million
-Worker requests, which is enough to host a dozen of these — so split
-across projects it's noise.
+So for our group running all four games at ~5–10 hours/week each, the
+realistic monthly total is around **£8** — half of which is the
+Workers Paid plan flat fee, half is the actual Hetzner usage. For
+someone running just one of these the total lands closer to **£5–6**.
 
-Compared to the cheapest flat-rate Enshrouded host: ~£14/month per game,
-regardless of use.
+Compared to the cheapest flat-rate Enshrouded host: ~£14/month for
+*one* game, regardless of whether anyone touches it. So even in the
+single-game case it's a saving; for four games it's
+roughly 6× cheaper than running four flat-rate hosts.
+
+\* The Worker's start flow needs ~75 s of background work via
+`waitUntil`. I run it on Paid because that's the plan I had before
+this project; whether the Free tier can handle the flow depends on
+Cloudflare's CPU-time accounting during sleep-heavy waitUntil work,
+and I haven't tested it. If you're already on Workers Paid for
+something else, this whole project is free on the Worker side — the
+$5 is amortised. (Hetzner prices are net; EU customers add VAT.)
 
 ## What's not obvious — getting one game fast
 
@@ -180,8 +189,10 @@ game's responsive, not just blindly wait. The natural way to do that is
 from the Worker: send the same A2S query to the new VM, wait for the
 response, then post "live!".
 
-Cloudflare Workers can do TCP via their Sockets API. They can't do UDP.
-So the Worker can't directly probe whether the game is up.
+Cloudflare Workers can do TCP via their Sockets API. They can't do UDP
+(as of mid-2026 — Cloudflare has been signalling UDP support is
+coming for a few years, but it isn't shipped). So the Worker can't
+directly probe whether the game is up.
 
 The fallback I settled on: the Worker polls Hetzner's status API until
 the VM is `running`, then waits a fixed 35 seconds for the container and

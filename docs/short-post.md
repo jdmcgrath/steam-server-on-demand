@@ -9,7 +9,7 @@ use ~5 hours a week. It's free and open source.
 
 ## What it is
 
-A Discord bot that spins up a fresh dedicated game server in about 75
+A Discord bot that spins up a fresh dedicated game server in 75–90
 seconds when someone types `/start`, and auto-shuts down 60 minutes
 after the last person leaves. Saves persist between sessions — you
 reconnect to the same world every time, with all bases and characters
@@ -17,13 +17,23 @@ intact.
 
 ## What it costs
 
-For typical use (5–10 hours/week per game), about **£1–3/month total**.
-Most of that is the persistent block volume holding your saves
-(~£0.34/month per game). VM time is €0.022/hour, only billed while
-someone's actually playing.
+For one game at typical use (5–10 hrs/week), expect ~£5–6/month total.
+Adding more games to the same setup is cheap — about £0.40/month per
+extra game's saves volume, plus VM time only when that game's
+actually running.
 
-Compared to flat-rate hosts: £10–20/month per game whether anyone
-touches it or not.
+The breakdown:
+
+- **Hetzner VM**: €0.022/hour, billed only while running (~£0.50/month
+  for 5–10 hrs/week of play)
+- **Per-game block volume (10 GB) for saves**: €0.40/month, always
+  allocated
+- **Cloudflare Workers Paid plan**: $5/month minimum, covers any number
+  of games. Required because the start flow uses ~75 s of background
+  work per request, which is tight on the Free tier.
+
+Compared to flat-rate Enshrouded/Valheim/Palworld hosts: £10–20/month
+*per game*, regardless of use.
 
 ## Currently supported
 
