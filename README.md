@@ -1,28 +1,32 @@
-# game-server-on-demand
+# steam-server-on-demand
 
-> Repo name is `enshrouded-on-demand` for historical reasons — it now supports
-> any Steam game with a dedicated server and an A2S server browser entry.
-> Enshrouded, Valheim, and Palworld ship out of the box.
+**Pay-as-you-play dedicated hosting for any Steam game with A2S support.**
 
-Pay-as-you-go Steam game-server hosting, controlled from Discord. Spins up
-on demand in about a minute, auto-shuts down when nobody's playing, and
-persists your world saves across sessions.
+Discord-controlled. Spins up on demand in about a minute, auto-shuts down
+when nobody's playing, and persists your world saves across sessions.
 
-Built for groups who play a few hours a week and don't want a flat £10–20
-per month hosting bill for a server that sits idle 95% of the time.
+Built for groups who play a few hours a week and don't want a flat
+£10–20 per month hosting bill for a server that sits idle 95% of the
+time.
 
 ## Supported games
 
-| Game | Docker image | Game port | A2S query port | Patches |
-|---|---|---|---|---|
-| [Enshrouded](./games/enshrouded) | `sknnr/enshrouded-dedicated-server` | UDP 15637 | UDP 15637 | Yes (entrypoint) |
-| [Valheim](./games/valheim) | `lloesche/valheim-server` | UDP 2456 | UDP 2457 | None |
-| [Palworld](./games/palworld) | `thijsvanloef/palworld-server-docker` | UDP 8211 | UDP 8211 | None |
+| Game | Docker image | Status | Game / query port |
+|---|---|---|---|
+| [Enshrouded](./games/enshrouded) | `sknnr/enshrouded-dedicated-server` | ✅ tested in production | UDP 15637 / 15637 |
+| [Valheim](./games/valheim) | `lloesche/valheim-server` | ✅ tested end-to-end | UDP 2456 / 2457 |
+| [V Rising](./games/vrising) | `trueosiris/vrising` | 🟡 configured, untested | UDP 9876 / 9877 |
+| [Palworld](./games/palworld) | `thijsvanloef/palworld-server-docker` | 🟡 configured, untested | UDP 8211 / 8211 |
 
-Adding another A2S-compatible game (V Rising, Project Zomboid, 7 Days to
-Die, Source-engine games, etc.) is typically a single new folder under
-`games/` containing a compose file and an `.env.example`. See
-`games/valheim/` for the template.
+Want another A2S-compatible Steam game (Project Zomboid, 7 Days to
+Die, Don't Starve Together, Core Keeper, CS2 / Source-engine games)?
+A new folder under `games/` with a compose file and an `.env.example`
+is usually all it takes. See `games/valheim/` for the template.
+
+Non-Steam-A2S games (Minecraft, Factorio, Satisfactory) are intentionally
+out of scope — they'd need per-game player-detection probes and a
+parallel set of conventions. PRs that add them via a clean per-game
+probe interface are welcome but not on the roadmap.
 
 ## How it works
 

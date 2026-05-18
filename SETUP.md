@@ -1,6 +1,6 @@
 # Setup Guide
 
-Bringing up a game-server-on-demand from scratch for one game. Plan ~45
+Bringing up steam-server-on-demand from scratch for one game. Plan ~45
 minutes per game, most of which is the one-off Steam download during the
 bake step.
 
@@ -195,7 +195,7 @@ repo and run the bake script. Set `GAME` and any game-specific env vars
 
 ```bash
 apt-get update -qq && apt-get install -y -qq git
-git clone https://github.com/jdmcgrath/enshrouded-on-demand /opt/game-server
+git clone https://github.com/jdmcgrath/steam-server-on-demand /opt/game-server
 cd /opt/game-server
 
 export GAME=enshrouded   # or valheim, palworld, ...

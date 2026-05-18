@@ -1,0 +1,27 @@
+services:
+  vrising:
+    image: trueosiris/vrising:latest
+    container_name: vrising
+    restart: unless-stopped
+    stop_grace_period: 90s
+    ports:
+      - "9876:9876/udp"   # game
+      - "9877:9877/udp"   # Steam server browser (A2S query lands here)
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-V Rising On-Demand}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - SERVER_DESCRIPTION=${SERVER_DESCRIPTION:-On-demand V Rising server}
+      - SERVER_PORT=9876
+      - SERVER_QUERY_PORT=9877
+      - SERVER_MAX_USERS=${SERVER_MAX_USERS:-10}
+      - TZ=${TZ:-Etc/UTC}
+    volumes:
+      # Persistent block volume mounted on the VM at /mnt/saves — V Rising's
+      # world data + character data live here.
+      - /mnt/saves:/mnt/vrising/persistentdata
+      # Named volume on the VM's root disk — game install (~5 GB) captured
+      # by the snapshot so fresh VMs don't redownload.
+      - vrising-game:/mnt/vrising/server
+
+volumes:
+  vrising-game:

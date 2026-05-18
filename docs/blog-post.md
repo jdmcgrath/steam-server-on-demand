@@ -19,7 +19,7 @@ person leaves. The expected monthly bill at our usage is somewhere between
 £1 and £3.
 
 The whole thing is on GitHub:
-[**jdmcgrath/enshrouded-on-demand**](https://github.com/jdmcgrath/enshrouded-on-demand).
+[**jdmcgrath/steam-server-on-demand**](https://github.com/jdmcgrath/steam-server-on-demand).
 
 ## The shape
 
@@ -271,4 +271,4 @@ might save you the hour I burned on the phantom restart.
 Code, with a setup guide that'll walk you through bringing your own
 instance up in about 45 minutes:
 
-<https://github.com/jdmcgrath/enshrouded-on-demand>
+<https://github.com/jdmcgrath/steam-server-on-demand>
