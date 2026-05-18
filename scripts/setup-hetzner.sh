@@ -101,7 +101,8 @@ else
 fi
 
 # --- Output the IDs ---
-SSH_KEY_ID=$(hcloud ssh-key describe "$SSH_KEY_NAME" -o format='{{.ID}}')
+# (wrangler.jsonc uses the SSH key's *name*, not its numeric ID, so we
+# don't need to look the ID up here.)
 FW_ID=$(hcloud firewall describe "$FW_NAME" -o format='{{.ID}}')
 VOL_ID=$(hcloud volume describe "$VOL_NAME" -o format='{{.ID}}')
 

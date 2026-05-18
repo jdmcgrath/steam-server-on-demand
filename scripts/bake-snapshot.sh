@@ -102,10 +102,12 @@ echo "==> Writing runtime config"
 # Start from the game's .env.example and overlay any env vars the caller set.
 umask 077
 cp "$GAME_DIR/.env.example" /etc/game-server/.env
-# For every line `KEY=default` in .env.example, if $KEY is set in the
-# environment, replace it. Lets the caller override any default without
-# knowing which vars a given game uses.
-while IFS='=' read -r key default; do
+# For every `KEY=...` line in .env.example, if $KEY is set in the
+# caller's environment, replace the value. Lets the caller override any
+# default without knowing which vars a given game uses. The value from
+# the file itself is irrelevant — we only care about the key name —
+# hence the `_` for the second field.
+while IFS='=' read -r key _; do
 	[[ -z "$key" || "$key" =~ ^# ]] && continue
 	value="${!key:-}"
 	if [ -n "$value" ]; then
