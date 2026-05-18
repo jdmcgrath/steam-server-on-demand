@@ -17,20 +17,19 @@ intact.
 
 ## What it costs
 
-For one game at typical use (5–10 hrs/week), expect ~£5–6/month total.
-Adding more games to the same setup is cheap — about £0.40/month per
-extra game's saves volume, plus VM time only when that game's
-actually running.
+For one game at typical use (5–10 hrs/week), expect ~£1/month total.
+For four games running together (like me), ~£2/month. The whole bot
+runs on Cloudflare's **Free** Workers tier — costs nothing.
 
 The breakdown:
 
 - **Hetzner VM**: €0.022/hour, billed only while running (~£0.50/month
-  for 5–10 hrs/week of play)
+  per game at 5–10 hrs/week of play)
 - **Per-game block volume (10 GB) for saves**: €0.40/month, always
   allocated
-- **Cloudflare Workers Paid plan**: $5/month minimum, covers any number
-  of games. Required because the start flow uses ~75 s of background
-  work per request, which is tight on the Free tier.
+- **Cloudflare Worker for the Discord bot**: free tier is enough — the
+  start flow's CPU time is well under Free's limits since most of it
+  is sleeping or waiting on network calls.
 
 Compared to flat-rate Enshrouded/Valheim/Palworld hosts: £10–20/month
 *per game*, regardless of use.

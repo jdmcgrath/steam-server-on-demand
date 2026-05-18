@@ -74,8 +74,8 @@ probe interface are welcome but not on the roadmap.
 | Hetzner CPX 32 VM | ~€0.022/hour (billed only while running) |
 | 10 GB block volume | ~€0.40/month (always allocated) |
 | Snapshot storage | ~€0.08/month per game |
-| Cloudflare Workers Paid | ~£5/month (covers all your game Workers) |
-| **Typical group (5–10 hrs/week)** | **~£1–3/month variable + the £5 Worker plan** |
+| Cloudflare Worker (Free plan is enough) | £0/month |
+| **Typical group (5–10 hrs/week)** | **~£1–3/month variable** |
 
 Compared to flat-rate hosting providers at £10–20/month per game,
 regardless of use.
@@ -111,8 +111,9 @@ Steam download during the bake step.
 You'll need:
 
 - A Hetzner Cloud account (per-hour VM billing)
-- A Cloudflare Workers Paid account (~£5/mo — needed for ~75 s of
-  background work during `start`)
+- A Cloudflare account (the Free tier is enough — the 75 s background
+  poll fits inside Free's CPU/request limits since the work is mostly
+  network I/O and `setTimeout`)
 - A Discord application with a bot user per game
 
 ## Status

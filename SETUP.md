@@ -22,10 +22,11 @@ volumes and firewalls can be shared if you want).
 ### Accounts
 
 - [**Hetzner Cloud**](https://console.hetzner.cloud) — per-hour VM billing.
-- [**Cloudflare Workers Paid**](https://dash.cloudflare.com/?to=/:account/workers/plans)
-  (~£5/mo). The free tier's `waitUntil` budget is too short for the ~75 s
-  background poll during `start`. One paid plan covers all your game
-  Workers.
+- [**Cloudflare account**](https://dash.cloudflare.com) — the Free
+  plan is enough. The `waitUntil` flow during `start` is ~75 s, but
+  almost all of it is `await fetch()` or `setTimeout`, neither of
+  which counts against Free's 10 ms-per-request CPU budget. Paid is
+  not required.
 - [**Discord Developer Portal**](https://discord.com/developers/applications).
 
 ## Why two Worker deploys per game

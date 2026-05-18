@@ -31,10 +31,9 @@ So I built it.
 What started as a weekend hack for one game turned into something more
 general. The same architecture now ships Discord-controlled,
 pay-as-you-play hosting for **Enshrouded, Valheim, Palworld, and V
-Rising** out of the same repo. My Hetzner bill across all four comes
-to roughly £1–3 a month; the only other ongoing cost is the £5
-Cloudflare Workers Paid plan, which I'd be paying anyway for other
-projects (more on that in the cost section below).
+Rising** out of the same repo. My actual monthly bill across all four
+is **about £2** — Hetzner only, since the Discord bot fits comfortably
+inside Cloudflare's Workers Free tier.
 
 The result: a dedicated game server that **doesn't exist** unless
 someone asks for it. Someone types `/enshrouded start` (or `/valheim`,
@@ -70,30 +69,19 @@ network at no per-request cost worth caring about.
 
 ## The maths
 
-| Component | Cost (net) |
+| Component | Cost |
 |-----------|------|
 | Hetzner CPX 32 VM | €0.022/hour, billed only while running |
 | Per-game block volume (10 GB) | €0.40/month, always allocated |
 | Per-game snapshot (~5–7 GB) | ~€0.08/month |
-| Cloudflare Workers (Paid plan*) | $5/month, covers any number of games |
+| Cloudflare Worker | £0 — fits in the Free plan |
 
-So for our group running all four games at ~5–10 hours/week each, the
-realistic monthly total is around **£8** — half of which is the
-Workers Paid plan flat fee, half is the actual Hetzner usage. For
-someone running just one of these the total lands closer to **£5–6**.
+For our group running all four games at ~5–10 hours each per week,
+that comes to **about £2/month**. For someone running just one of
+these, closer to **£0.80**.
 
 Compared to the cheapest flat-rate Enshrouded host: ~£14/month for
-*one* game, regardless of whether anyone touches it. So even in the
-single-game case it's a saving; for four games it's
-roughly 6× cheaper than running four flat-rate hosts.
-
-\* The Worker's start flow needs ~75 s of background work via
-`waitUntil`. I run it on Paid because that's the plan I had before
-this project; whether the Free tier can handle the flow depends on
-Cloudflare's CPU-time accounting during sleep-heavy waitUntil work,
-and I haven't tested it. If you're already on Workers Paid for
-something else, this whole project is free on the Worker side — the
-$5 is amortised. (Hetzner prices are net; EU customers add VAT.)
+*one* game regardless of whether anyone touches it.
 
 ## What's not obvious — getting one game fast
 
@@ -153,59 +141,27 @@ to about 13.
 
 ### Discovery 3: the watchdog couldn't see players
 
-The upstream image ships an "idle watchdog" template that's meant to
-detect when nobody's playing. It looks like this:
+The upstream image ships an "idle watchdog" template that's *meant* to
+detect when nobody's playing. The relevant lines:
 
 ```bash
 joined=$(docker logs enshrouded | grep -c "PlayerJoined")
 left=$(docker logs enshrouded   | grep -c "PlayerLeft")
-active=$(( joined - left ))
 ```
 
-There's an honest comment right above it: `# Adjust grep pattern once
-you've seen real Enshrouded log lines`. The author had wired the structure
-but never finished the strings.
-
-Reader, I checked the logs. Enshrouded doesn't print `PlayerJoined` or
-`PlayerLeft` — those are just placeholders. The watchdog as written sees
-`0 - 0 = 0` always, and shuts down after the idle period — even while
-someone's actively playing. (I found this the hard way when it killed my
-SSH session mid-debug.)
+There's an honest comment right above: `# Adjust grep pattern once
+you've seen real Enshrouded log lines`. The author wired the structure
+but never finished the strings — and Enshrouded doesn't actually log
+`PlayerJoined` or `PlayerLeft`. The watchdog as shipped always sees
+zero players and shuts down after its idle window, even mid-session.
+(I found this the hard way when it killed my SSH session.)
 
 The right way to count players on a Steam dedicated server is the
-**A2S_INFO** query: send one specific UDP packet to the query port, get
-back a response that includes the player count. It's the same protocol
-Steam's server browser uses to show "3/10 players" in the list.
+**A2S_INFO** UDP query — the same protocol Steam's server browser
+uses to show "3/10 players" in the list. ~20 lines of Python in a
+bash loop, runs every minute, no log scraping at all.
 
-Re-wrote the watchdog around an A2S query — about 20 lines of Python
-sitting inside a bash loop. Now it actually knows when someone's
-connected, and the idle timer correctly stays at zero until everyone's
-gone.
-
-### Discovery 4: Cloudflare Workers can't do UDP
-
-I wanted the "server is live!" Discord follow-up to actually verify the
-game's responsive, not just blindly wait. The natural way to do that is
-from the Worker: send the same A2S query to the new VM, wait for the
-response, then post "live!".
-
-Cloudflare Workers can do TCP via their Sockets API. They can't do UDP
-(as of mid-2026 — Cloudflare has been signalling UDP support is
-coming for a few years, but it isn't shipped). So the Worker can't
-directly probe whether the game is up.
-
-The fallback I settled on: the Worker polls Hetzner's status API until
-the VM is `running`, then waits a fixed 35 seconds for the container and
-game to come up. Not as principled as I'd like, but reproducible enough
-in practice.
-
-A more correct version would have the VM push the "ready" signal: a small
-script that curls back to the Worker once the game's actually serving.
-That needs the Discord interaction token plumbed from the Worker to the
-VM (probably via the Hetzner server's user-data field at create time,
-with the Worker storing a mapping in KV). On the list.
-
-### Discovery 5: Hetzner snapshots preserve container IDs
+### Discovery 4: Hetzner snapshots preserve container IDs
 
 This one cost me an hour. After a `delete server + create from snapshot`,
 I'd look at `docker logs enshrouded` and see what looked like two full
@@ -240,7 +196,7 @@ With Enshrouded working, I tried adding Valheim, then Palworld, then V
 Rising. The repo's architecture turned out to be ~85% game-agnostic — but
 the 15% that isn't taught me as much as the original investigation did.
 
-### Discovery 6: the "listed publicly = answerable to queries" trap
+### Discovery 5: the "listed publicly = answerable to queries" trap
 
 I baked Valheim. The world generated, I could connect, my character spawned.
 But the watchdog never reset the idle timer — A2S queries on Valheim's
@@ -262,7 +218,7 @@ documented reason for this and no way to disable just the listing while
 keeping queries answerable. So all my games default `ListOnSteam=true` (or
 its equivalent), with the password as the actual access control.
 
-### Discovery 7: Palworld doesn't implement A2S at all
+### Discovery 6: Palworld doesn't implement A2S at all
 
 Then I tried Palworld. The game came up, I connected fine, but A2S timed
 out *everywhere* — on the standard Steam query port (27015), on the game
@@ -347,11 +303,11 @@ The boring infrastructure pieces — Hetzner Cloud, Cloudflare Workers,
 Discord interactions, the Steam A2S protocol, game REST APIs, Docker —
 are individually well-trodden, but the combination isn't. The fun was
 all in the gaps between them: the snapshot caching trick, the watchdog
-placeholder discovery, the Workers-can't-do-UDP realisation, the phantom
-container restart, the listed-publicly suppression pattern, Palworld's
-missing A2S. If you're building something similar (or you just enjoy
-seeing how a few cheap pieces compose into something useful), the repo
-and this post might save you the hour I burned on each of those things.
+placeholder bug, the phantom container restart, the listed-publicly
+suppression pattern, Palworld's missing A2S. If you're building
+something similar (or you just enjoy seeing how a few cheap pieces
+compose into something useful), the repo and this post might save you
+the hour I burned on each of those.
 
 And selfishly, my friends and I now have a server that costs ~£2 a month
 to play four different games on. Sunday-afternoon-me would have killed

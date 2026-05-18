@@ -11,8 +11,8 @@ Last Sunday my friends wanted to play Enshrouded. World was on my
 desktop, I was busy, and dedicated hosts cost £14+/mo per game for
 something we use 5 hrs a week.
 
-So I built pay-as-you-play game hosting. Pennies in Hetzner usage on
-top of one Cloudflare Workers Paid plan.
+So I built pay-as-you-play game hosting. ~£2/mo for four games.
+Cloudflare Free + a few hours of Hetzner per week.
 
 **2/**
 Type `/enshrouded start` in Discord → fresh VM boots from a snapshot
