@@ -206,16 +206,14 @@ SSH in:
 ssh root@<server-ip>
 ```
 
-Install `git` (not preinstalled on Debian 12 cloud images), then clone the
-repo and run the bake script. Set `GAME` and any game-specific env vars
-(each game's `.env.example` lists what it expects):
+#### One-liner option (recommended)
+
+Export the env vars inside the SSH session, then pipe the bootstrap
+script through bash. It apt-installs git, clones the repo, and hands
+off to `bake-snapshot.sh`.
 
 ```bash
-apt-get update -qq && apt-get install -y -qq git
-git clone https://github.com/jdmcgrath/steam-server-on-demand /opt/game-server
-cd /opt/game-server
-
-export GAME=enshrouded   # or valheim, palworld, ...
+export GAME=enshrouded   # or valheim, palworld, vrising
 export WORKER_URL=https://<game>.<subdomain>.workers.dev/api/cleanup
 export WATCHDOG_SECRET=<the secret you saved in step 4>
 
@@ -223,6 +221,24 @@ export WATCHDOG_SECRET=<the secret you saved in step 4>
 export SERVER_NAME="My Shroud"
 read -rsp "Server password: " SERVER_PASSWORD; echo; export SERVER_PASSWORD
 # Palworld also needs ADMIN_PASSWORD; Valheim takes SERVER_PUBLIC, etc.
+
+curl -fsSL https://raw.githubusercontent.com/jdmcgrath/steam-server-on-demand/main/scripts/bake-bootstrap.sh \
+  | bash -s -- "$GAME"
+```
+
+Skip to "Watch progress" below once that's running.
+
+#### Manual option
+
+If you want to see each step, do the clone yourself:
+
+```bash
+apt-get update -qq && apt-get install -y -qq git
+git clone https://github.com/jdmcgrath/steam-server-on-demand /opt/game-server
+cd /opt/game-server
+
+export GAME=enshrouded
+# (same env exports as above)
 
 bash scripts/bake-snapshot.sh
 ```

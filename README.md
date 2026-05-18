@@ -111,12 +111,55 @@ Workers (different `name` in `wrangler.jsonc`, different `GAME_NAME` env
 var, different snapshot. Hetzner volumes and firewalls can be shared or
 separated as you prefer).
 
+## Quickstart
+
+If you have a Hetzner account, a Cloudflare account, a Discord
+developer application, and the [prerequisites](./SETUP.md#prerequisites)
+installed, the whole flow is:
+
+```bash
+# 1. Bootstrap the Hetzner side: SSH key, firewall, saves volume
+bash scripts/setup-hetzner.sh enshrouded
+
+# 2. Configure + deploy the Worker (first pass, placeholder snapshot)
+cd worker
+cp wrangler.jsonc.example wrangler.jsonc
+$EDITOR wrangler.jsonc                # fill in the IDs from step 1
+wrangler secret put HETZNER_TOKEN
+wrangler secret put WATCHDOG_SECRET   # save a copy — needed in step 4
+npm install && wrangler deploy
+
+# 3. Register the /enshrouded slash command (see SETUP.md §3 for the
+#    Discord application setup itself)
+
+# 4. Bake the snapshot. Create a temp Hetzner VM with the saves volume
+#    attached, SSH in, then one command:
+export WORKER_URL=https://<your-worker>.workers.dev/api/cleanup \
+       WATCHDOG_SECRET=<from step 2> \
+       SERVER_NAME="My Shroud" \
+       SERVER_PASSWORD=<your-password>
+curl -fsSL https://raw.githubusercontent.com/jdmcgrath/steam-server-on-demand/main/scripts/bake-bootstrap.sh \
+  | bash -s -- enshrouded
+
+# 5. Wait for the steam download, stop the container, take the snapshot,
+#    delete the bake VM. Update HETZNER_SNAPSHOT_ID in wrangler.jsonc.
+cd worker && wrangler deploy
+
+# 6. Sanity-check everything wired up correctly
+bash scripts/verify.sh
+
+# 7. /enshrouded start in your Discord
+```
+
+Substitute `valheim`, `palworld`, or `vrising` for `enshrouded` to set
+up other games.
+
 ## Setup
 
-See [**SETUP.md**](./SETUP.md) for the end-to-end walkthrough: Hetzner
-project bootstrap, Discord application, baking the snapshot, deploying
-the Worker. Plan ~45 minutes per game, most of which is the one-off
-Steam download during the bake step.
+See [**SETUP.md**](./SETUP.md) for the full walkthrough with
+explanations: Hetzner project bootstrap, Discord application, baking
+the snapshot, deploying the Worker. Plan ~45 minutes per game, most
+of which is the one-off Steam download during the bake step.
 
 You'll need:
 
