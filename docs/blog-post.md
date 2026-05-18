@@ -1,23 +1,45 @@
 # How I built a pay-as-you-play dedicated game server for £2 a month
 
-Three of us play [Enshrouded](https://store.steampowered.com/app/1203620/Enshrouded/)
-most weekends, maybe five to ten hours all in. The cheapest dedicated host I
-could find wanted £14 a month, billed whether anyone touched the server or
-not. Roughly £170 a year for something idle 95% of the time.
+A few of us started a new
+[Enshrouded](https://store.steampowered.com/app/1203620/Enshrouded/) run
+the other weekend. Played the whole Saturday — built a base, hit a few
+skill points, the usual. Sunday came around, they wanted to keep going,
+and I was busy with something else.
 
-So I built my own.
+Trouble was: the world only existed on my local save. No me, no server,
+no game. The two of them couldn't keep playing without me running the
+host on my desktop.
 
-What started as a hobbyist hack for one game turned into something more
-general. The same architecture now ships Discord-controlled, pay-as-you-play
-hosting for **Enshrouded, Valheim, Palworld, and V Rising** out of the same
-repo. Across all four, my expected monthly bill is somewhere between £1 and
-£3.
+So we needed a real server. My desktop isn't comfortable hosting while I
+also play, and the dedicated Enshrouded hosts I looked at wanted £14 a
+month minimum — for a server we'd actually use maybe five hours a week.
+Roughly £170 a year for something idle 95% of the time.
 
-The result: a dedicated game server that **doesn't exist** unless someone
-asks for it. Someone types `/enshrouded start` (or `/valheim`, or whichever
-game) in our Discord, a fresh VM spins up in about 75 seconds, the bot edits
-its own message to post the connect IP, we play, and the server quietly
-deletes itself an hour after the last person leaves.
+I work with AWS Lambda every day. Pay-when-you-use is the default mental
+model in my world. So my first thought was: surely someone's built
+this for game servers. Spin up on demand, shut down when idle, bill by
+the hour. Serverless gaming.
+
+Turns out, sort of. [Aternos](https://aternos.org) has had this nailed
+for Minecraft for over a decade — free, ad-supported, brilliant piece of
+internet software. But for Enshrouded? Valheim? Palworld? The games we
+actually play? Nothing. The market for any of those is exclusively
+flat-rate monthly.
+
+So I built it.
+
+What started as a weekend hack for one game turned into something more
+general. The same architecture now ships Discord-controlled,
+pay-as-you-play hosting for **Enshrouded, Valheim, Palworld, and V
+Rising** out of the same repo. Across all four, my expected monthly bill
+is somewhere between £1 and £3.
+
+The result: a dedicated game server that **doesn't exist** unless
+someone asks for it. Someone types `/enshrouded start` (or `/valheim`,
+or whichever game) in our Discord, a fresh VM spins up in about 75
+seconds, the bot edits its own message to post the connect IP, we play,
+and the server quietly deletes itself an hour after the last person
+leaves.
 
 The whole thing is on GitHub:
 [**jdmcgrath/steam-server-on-demand**](https://github.com/jdmcgrath/steam-server-on-demand).
@@ -310,25 +332,19 @@ Docker image is well-maintained. Adding a non-A2S game is the same plus a
 
 ## Why I bothered to write this up
 
-Two reasons.
-
-The first is that I tried to find a hosted version of this before I built
-it, and there isn't one. [Aternos](https://aternos.org) does something
-similar for Minecraft (free, ad-supported, and one of my favourite pieces
-of internet software for a reason) but for other games the market is
-exclusively flat-rate monthly. There's a gap somebody could fill, and at
-minimum it's worth documenting that the building blocks all exist and
-compose nicely.
-
-The second is that the boring infrastructure pieces — Hetzner Cloud,
-Cloudflare Workers, Discord interactions, the Steam A2S protocol, game
-REST APIs, Docker — are individually well-trodden, but the combination
-isn't. The fun was in the gaps between them: the snapshot caching trick,
-the watchdog placeholder discovery, the Workers-can't-do-UDP realisation,
-the phantom container restart, the listed-publicly suppression pattern,
-Palworld's missing A2S. If you're building something similar (or just like
+The boring infrastructure pieces — Hetzner Cloud, Cloudflare Workers,
+Discord interactions, the Steam A2S protocol, game REST APIs, Docker —
+are individually well-trodden, but the combination isn't. The fun was
+all in the gaps between them: the snapshot caching trick, the watchdog
+placeholder discovery, the Workers-can't-do-UDP realisation, the phantom
+container restart, the listed-publicly suppression pattern, Palworld's
+missing A2S. If you're building something similar (or you just enjoy
 seeing how a few cheap pieces compose into something useful), the repo
 and this post might save you the hour I burned on each of those things.
+
+And selfishly, my friends and I now have a server that costs ~£2 a month
+to play four different games on. Sunday-afternoon-me would have killed
+for that.
 
 Code, with a setup guide that'll walk you through bringing your own
 instance up in about 45 minutes per game:
