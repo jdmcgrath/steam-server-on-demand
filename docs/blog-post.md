@@ -1,8 +1,4 @@
-# How I built a pay-as-you-play Enshrouded server for around £2 a month
-
-> **Update:** the same architecture now ships out of the box for Valheim
-> and Palworld too — see [Generalising to other games](#generalising-to-other-games)
-> at the bottom. The Enshrouded version is just the first one I built.
+# How I built a pay-as-you-play dedicated game server for £2 a month
 
 Three of us play [Enshrouded](https://store.steampowered.com/app/1203620/Enshrouded/)
 most weekends, maybe five to ten hours all in. The cheapest dedicated host I
@@ -11,12 +7,17 @@ not. Roughly £170 a year for something idle 95% of the time.
 
 So I built my own.
 
-The result: an Enshrouded server that **doesn't exist** unless someone asks
-for it. Someone types `/enshrouded start` in our Discord, a fresh VM spins
-up in about 75 seconds, the bot edits its own message to post the connect
-IP, we play, and the server quietly deletes itself an hour after the last
-person leaves. The expected monthly bill at our usage is somewhere between
-£1 and £3.
+What started as a hobbyist hack for one game turned into something more
+general. The same architecture now ships Discord-controlled, pay-as-you-play
+hosting for **Enshrouded, Valheim, Palworld, and V Rising** out of the same
+repo. Across all four, my expected monthly bill is somewhere between £1 and
+£3.
+
+The result: a dedicated game server that **doesn't exist** unless someone
+asks for it. Someone types `/enshrouded start` (or `/valheim`, or whichever
+game) in our Discord, a fresh VM spins up in about 75 seconds, the bot edits
+its own message to post the connect IP, we play, and the server quietly
+deletes itself an hour after the last person leaves.
 
 The whole thing is on GitHub:
 [**jdmcgrath/steam-server-on-demand**](https://github.com/jdmcgrath/steam-server-on-demand).
@@ -26,19 +27,19 @@ The whole thing is on GitHub:
 The pieces:
 
 - **A Cloudflare Worker** handles the Discord slash commands. When someone
-  types `/enshrouded start`, the Worker calls the Hetzner Cloud API to
-  create a VM from a prepared snapshot, then polls until the game is up and
-  edits its own Discord message live with the status.
-- **A Hetzner snapshot** contains the OS, Docker, the patched container
-  entrypoint, and the 8 GB Enshrouded server install, all preconfigured.
-  Cold boot to playable is about 75 seconds.
-- **A persistent block volume** holds the actual world save. It's attached
+  types `/start`, the Worker calls the Hetzner Cloud API to create a VM
+  from a prepared snapshot, then polls until the game is up and edits its
+  own Discord message live with the status.
+- **A Hetzner snapshot** contains the OS, Docker, the game install (4–10 GB
+  depending on game) and any per-game patches, so the VM is fully ready in
+  ~75 seconds without re-downloading via Steam each time.
+- **A persistent block volume** holds the actual world saves. It's attached
   to whichever VM is currently running and survives between sessions, so
   the world loads with everyone's bases and inventory intact every time.
-- **A watchdog** running on the VM queries the game's Steam A2S protocol
-  every minute. As long as someone's connected the idle timer is held at
-  zero. After 60 minutes of nobody on, it shuts down the container, asks
-  the Worker to delete the VM, and powers off.
+- **A watchdog** running on the VM probes the game's player count every
+  minute. As long as someone's connected the idle timer is held at zero.
+  After 60 minutes of nobody on, it shuts down the container, asks the
+  Worker to delete the VM, and powers off.
 
 The Worker is the only always-on piece, and it sits on Cloudflare's edge
 network at no per-request cost worth caring about.
@@ -48,21 +49,22 @@ network at no per-request cost worth caring about.
 | Component | Cost |
 |-----------|------|
 | Hetzner CPX 32 VM | €0.022/hour, billed only while running |
-| 10 GB block volume (saves) | €0.40/month, always allocated |
-| Snapshot (~6 GB) | €0.08/month |
+| Per-game block volume (10 GB) | €0.40/month, always allocated |
+| Per-game snapshot (~5–7 GB) | ~€0.08/month |
 | Cloudflare Workers Paid | ~£5/month* |
-| **Typical use (5–10 hrs/week)** | **~£1–3/month variable on top of the £5 worker** |
+| **Fixed cost for all four games** | **~£1.60/month** |
+| **Typical use (5–10 hrs/week per game)** | **~£1–3/month variable on top** |
 
 \* The Workers Paid plan is the only fixed cost that's a bit annoying. The
 free tier's `waitUntil` budget isn't long enough for the 75-second
 background poll the start flow needs. But £5 a month buys you 10 million
-Worker requests, which is enough to host a dozen of these — so split among
-projects it's noise.
+Worker requests, which is enough to host a dozen of these — so split
+across projects it's noise.
 
-Compared to the cheapest flat-rate Enshrouded host: ~£14/month regardless
-of use.
+Compared to the cheapest flat-rate Enshrouded host: ~£14/month per game,
+regardless of use.
 
-## What's not obvious
+## What's not obvious — getting one game fast
 
 When I first wired this up, I expected the snapshot to do the heavy
 lifting: snapshot has everything, new VM boots from snapshot, container
@@ -165,10 +167,10 @@ game to come up. Not as principled as I'd like, but reproducible enough
 in practice.
 
 A more correct version would have the VM push the "ready" signal: a small
-script that curls back to the Worker once the game's actually serving. That
-needs the Discord interaction token plumbed from the Worker to the VM
-(probably via the Hetzner server's user-data field at create time, with
-the Worker storing a mapping in KV). On the list.
+script that curls back to the Worker once the game's actually serving.
+That needs the Discord interaction token plumbed from the Worker to the
+VM (probably via the Hetzner server's user-data field at create time,
+with the Worker storing a mapping in KV). On the list.
 
 ### Discovery 5: Hetzner snapshots preserve container IDs
 
@@ -199,31 +201,90 @@ Moral: when investigating `docker logs` on a snapshot-restored container,
 filter by time aggressively. Or look at `docker inspect --format
 '{{.State.StartedAt}}'` rather than the log timestamps.
 
-## Generalising to other games
+## What's not obvious — generalising to four games
 
-The architecture turned out to be 85% game-agnostic. The genuinely
-Enshrouded-specific bits are the Docker image and the two entrypoint
-patches (which only mattered because that particular image deletes its
-own steamcmd state and runs `validate` on every boot — well-maintained
-images like `lloesche/valheim-server` and `thijsvanloef/palworld-server-docker`
-don't have those problems).
+With Enshrouded working, I tried adding Valheim, then Palworld, then V
+Rising. The repo's architecture turned out to be ~85% game-agnostic — but
+the 15% that isn't taught me as much as the original investigation did.
 
-A weekend of refactoring split everything into:
+### Discovery 6: the "listed publicly = answerable to queries" trap
 
-- `games/<name>/` — per-game compose file and `.env.example`, plus an
-  optional `entrypoint.sh` for games that need patches.
-- `worker/` — unchanged shape, but `GAME_NAME` and `GAME_PORT` now come
-  from env vars instead of hardcoded constants.
-- `server/` — generic `game-watchdog` and systemd units; the A2S protocol
-  is identical across games, so the watchdog is one file regardless of
-  what's running on top.
-- `scripts/bake-snapshot.sh GAME=valheim …` — dispatches to the right
-  game folder.
+I baked Valheim. The world generated, I could connect, my character spawned.
+But the watchdog never reset the idle timer — A2S queries on Valheim's
+query port were timing out.
 
-Adding a new A2S-compatible game (V Rising, Project Zomboid, 7 Days to
-Die, Source-engine games) is now a single new folder under `games/`
-containing a compose template and an env file. A weekend of work
-unlocked the same per-game savings for everything in that category.
+Buried in the lloesche image's env var: `SERVER_PUBLIC=true`. With
+`SERVER_PUBLIC=false` (which felt like the safer default for a small
+private server), Valheim's server binary suppresses A2S responses entirely.
+Doesn't matter that the password gates actual joins — Valheim refuses to
+answer Steam queries when not listed publicly.
+
+A week later, baking V Rising, exactly the same thing happened with a
+different env var: `HOST_SETTINGS_ListOnSteam=true`. Different game,
+different image, different name, same suppression behaviour.
+
+Lesson: Steam's dedicated server convention seems to *bundle* "this server
+is publicly listed" with "this server responds to queries". There's no
+documented reason for this and no way to disable just the listing while
+keeping queries answerable. So all my games default `ListOnSteam=true` (or
+its equivalent), with the password as the actual access control.
+
+### Discovery 7: Palworld doesn't implement A2S at all
+
+Then I tried Palworld. The game came up, I connected fine, but A2S timed
+out *everywhere* — on the standard Steam query port (27015), on the game
+port (8211), even from inside the container hitting localhost. The socket
+was bound, but `/proc/net/udp` showed the receive buffer filling up: queries
+were arriving, the server just wasn't reading them.
+
+[BattleMetrics — the largest game-server monitoring service — explicitly
+states](https://www.battlemetrics.com/servers/palworld/38791379)
+*"Palworld does not support player lists"*. Pocketpair (Palworld's
+developer) chose not to implement A2S responses. Instead, they ship a
+built-in REST API on port 8212 with admin-authenticated endpoints for
+server info, settings, and (crucially) the player list.
+
+So Palworld needed a different probe. I extended the watchdog with a
+dispatch model: if `/etc/game-server/probe.sh` exists, run that and trust
+its stdout as the player count; otherwise fall back to the built-in A2S
+probe. Each game can drop its own probe script in its folder. For
+Palworld:
+
+```bash
+# games/palworld/probe.sh
+auth=$(printf '%s' "admin:$ADMIN_PASSWORD" | base64 -w0)
+docker exec palworld wget -qO- \
+  --header="Authorization: Basic $auth" \
+  http://127.0.0.1:8212/v1/api/players \
+  | jq '.players | length'
+```
+
+This unlocks future games that don't speak A2S — Factorio's UDP protocol,
+Minecraft's GameSpy query, Satisfactory's Unreal-native protocol — all
+addressable through a 20-line per-game probe script with no changes to the
+watchdog itself.
+
+## Shipping four games
+
+The architecture, after the multi-game push, splits into:
+
+- `games/<name>/` — per-game compose file, `.env.example`, README, and
+  optionally an `entrypoint.sh` (only Enshrouded needs one) or `probe.sh`
+  (only Palworld so far).
+- `worker/` — `GAME_NAME` and `GAME_PORT` come from env vars instead of
+  hardcoded constants. Same Worker source can serve any game; deploying
+  multiple is one wrangler config per game.
+- `server/` — generic `game-watchdog` that dispatches to per-game probes
+  with the A2S probe as the default fallback.
+- `scripts/bake-snapshot.sh GAME=valheim …` — dispatches to the right game
+  folder and writes the right runtime config.
+
+Adding a new A2S-compatible Steam game (Project Zomboid, 7 Days to Die,
+Source-engine games, Don't Starve Together, Core Keeper) is now a single
+new folder under `games/` with two files: a compose template and an
+`.env.example`. ~1 hour each from idea to live-tested if the upstream
+Docker image is well-maintained. Adding a non-A2S game is the same plus a
+20-line `probe.sh`.
 
 ## What's still on the list
 
@@ -243,9 +304,9 @@ unlocked the same per-game savings for everything in that category.
   volume creation is currently `hcloud` CLI commands in the setup guide.
   A Terraform module would make it one command and easier to tear down.
 
-- **Non-A2S games.** Satisfactory, Factorio, and a handful of others
-  ship their own query protocols. Currently out of scope but a clean
-  extension point: per-game protocol modules in `games/<name>/probe.py`.
+- **More non-A2S games.** Satisfactory, Factorio, and Minecraft are the
+  obvious next candidates now that the per-game-probe extension exists.
+  Each is roughly a weekend.
 
 ## Why I bothered to write this up
 
@@ -260,15 +321,16 @@ minimum it's worth documenting that the building blocks all exist and
 compose nicely.
 
 The second is that the boring infrastructure pieces — Hetzner Cloud,
-Cloudflare Workers, Discord interactions, the Steam A2S protocol — are
-individually well-trodden, but the combination isn't. The fun was in the
-gaps between them: the snapshot caching trick, the watchdog placeholder
-discovery, the Workers-can't-do-UDP realisation, the phantom container
-restart. If you're building something similar (or just like seeing how a
-few cheap pieces compose into something useful), the repo and this post
-might save you the hour I burned on the phantom restart.
+Cloudflare Workers, Discord interactions, the Steam A2S protocol, game
+REST APIs, Docker — are individually well-trodden, but the combination
+isn't. The fun was in the gaps between them: the snapshot caching trick,
+the watchdog placeholder discovery, the Workers-can't-do-UDP realisation,
+the phantom container restart, the listed-publicly suppression pattern,
+Palworld's missing A2S. If you're building something similar (or just like
+seeing how a few cheap pieces compose into something useful), the repo
+and this post might save you the hour I burned on each of those things.
 
 Code, with a setup guide that'll walk you through bringing your own
-instance up in about 45 minutes:
+instance up in about 45 minutes per game:
 
 <https://github.com/jdmcgrath/steam-server-on-demand>
