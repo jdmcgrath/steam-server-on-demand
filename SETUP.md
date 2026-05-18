@@ -189,10 +189,12 @@ SSH in:
 ssh root@<server-ip>
 ```
 
-Clone this repo and run the bake script. Set `GAME` and any game-specific
-env vars (each game's `.env.example` lists what it expects):
+Install `git` (not preinstalled on Debian 12 cloud images), then clone the
+repo and run the bake script. Set `GAME` and any game-specific env vars
+(each game's `.env.example` lists what it expects):
 
 ```bash
+apt-get update -qq && apt-get install -y -qq git
 git clone https://github.com/jdmcgrath/enshrouded-on-demand /opt/game-server
 cd /opt/game-server
 
