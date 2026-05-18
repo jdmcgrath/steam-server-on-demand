@@ -54,5 +54,8 @@ Open source, MIT. Setup guide is ~45 min/game:
 
 github.com/jdmcgrath/steam-server-on-demand
 
+A ⭐ if it lands; PRs welcome (new games are usually one folder, two
+files).
+
 Full writeup with all the discoveries:
 [blog link]

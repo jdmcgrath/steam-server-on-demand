@@ -65,4 +65,8 @@ it's just `/start` in your server's Discord.
 
 There's a longer writeup of the journey + the technical discoveries
 [on the repo](https://github.com/jdmcgrath/steam-server-on-demand/blob/main/docs/blog-post.md)
-if you're into the infra side. PRs welcome — especially for more games.
+if you're into the infra side.
+
+If you bring it up and it works for your group, a GitHub star is the
+nicest way to say so — helps other groups find it. Issues and PRs
+welcome too, especially if you want to add a game I haven't covered.

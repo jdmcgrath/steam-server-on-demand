@@ -275,27 +275,35 @@ new folder under `games/` with two files: a compose template and an
 Docker image is well-maintained. Adding a non-A2S game is the same plus a
 20-line `probe.sh`.
 
-## What's still on the list
+## Where I'd love help
 
-- **Push the "game ready" signal from the VM, not poll for it.** Currently
-  the Worker polls Hetzner status then sleeps for a fixed 35 seconds.
-  Cleaner UX would have the entrypoint curl back to the Worker once the
-  game's actually serving — needs the Discord interaction token plumbed
-  through the Hetzner user-data field with the Worker keeping a mapping
-  in KV.
+Open issues on the repo where I haven't done the work and a PR would
+land happily:
 
-- **Skip the two-pass Worker deploy.** You deploy once with a placeholder
-  snapshot ID, bake, redeploy with the real ID. Resolvable by having the
-  bake script discover the Worker URL from a known KV key instead of
-  being told it.
+- **More A2S-compatible games.** Project Zomboid, 7 Days to Die,
+  Don't Starve Together, Core Keeper, Source-engine titles — usually
+  one new folder under `games/` with a compose file and an
+  `.env.example`. 1–2 hours including a live-fire test.
 
-- **Terraform for the Hetzner bootstrap.** The SSH key, firewall, and
-  volume creation is currently `hcloud` CLI commands in the setup guide.
-  A Terraform module would make it one command and easier to tear down.
+- **More non-A2S games via per-game probes.** Satisfactory, Factorio,
+  Minecraft are the obvious next candidates now that the probe.sh
+  extension exists. ~weekend each.
 
-- **More non-A2S games.** Satisfactory, Factorio, and Minecraft are the
-  obvious next candidates now that the per-game-probe extension exists.
-  Each is roughly a weekend.
+- **Push the "game ready" signal from the VM, not poll for it.**
+  Currently the Worker polls Hetzner status then sleeps a fixed 35
+  seconds. Cleaner would be the VM curling back when the game's
+  actually serving — needs the Discord interaction token plumbed
+  through Hetzner's user-data field, with the Worker keeping a
+  mapping in KV.
+
+- **Terraform module for the Hetzner bootstrap.** The SSH key,
+  firewall, and volume creation is `hcloud` CLI commands today. A
+  Terraform module would make it one command and easier to tear down.
+
+- **Skip the two-pass Worker deploy.** You currently deploy once with
+  a placeholder snapshot ID, bake, redeploy with the real ID.
+  Resolvable by having the bake script read the Worker URL from a
+  known KV key instead of being told it.
 
 ## Why I bothered to write this up
 
@@ -313,7 +321,13 @@ And selfishly, my friends and I now have a server that costs ~£2 a month
 to play four different games on. Sunday-afternoon-me would have killed
 for that.
 
-Code, with a setup guide that'll walk you through bringing your own
-instance up in about 45 minutes per game:
+Code's MIT-licensed, with a setup guide that'll get you to a working
+`/yourgame start` in about 45 minutes:
 
 <https://github.com/jdmcgrath/steam-server-on-demand>
+
+If you bring it up for a game I haven't covered, a PR with a new
+`games/<name>/` folder is the easiest way to contribute — most of them
+are two files. If you find a bug or have a question, open an issue. If
+this saved you the hour I burned on the phantom container restart, a
+GitHub star helps me know it landed.
