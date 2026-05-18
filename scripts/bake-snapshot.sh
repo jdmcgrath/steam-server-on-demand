@@ -28,7 +28,13 @@ require GAME
 require WORKER_URL
 require WATCHDOG_SECRET
 
-VOLUME_DEV="${VOLUME_DEV:-/dev/sdb}"
+# Find the saves volume. Hetzner exposes attached volumes via a predictable
+# by-id symlink (scsi-0HC_Volume_<id>), which is robust to kernel
+# enumeration order. The historic /dev/sdb default is a fallback.
+if [ -z "${VOLUME_DEV:-}" ]; then
+	VOLUME_DEV=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -1)
+	VOLUME_DEV="${VOLUME_DEV:-/dev/sdb}"
+fi
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 GAME_DIR="$REPO_DIR/games/$GAME"
 
