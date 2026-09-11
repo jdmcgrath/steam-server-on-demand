@@ -11,7 +11,7 @@
     "@cloudflare/workers-types": "^4.20250513.0",
     "@types/node": "^25.8.0",
     "typescript": "^5.5.2",
-    "wrangler": "^4.92.0"
+    "wrangler": "^4.131.0"
   },
   "dependencies": {
     "tweetnacl": "^1.0.3"
